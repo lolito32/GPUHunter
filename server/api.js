@@ -10,6 +10,7 @@ import {
   getSettings,
   getStatus,
   getTargets,
+  isFreshStart,
   setSettings,
   setTargets
 } from './store.js';
@@ -39,6 +40,7 @@ router.get('/status', (_req, res) => {
     syncing: isSyncing(),
     intervalMin: getSettings().intervalMin || SYNC_INTERVAL_MIN,
     lastRun: status.lastRun || null,
+    fresh: isFreshStart() ? 1 : 0,
     version: '1.0.0'
   });
 });
@@ -75,6 +77,7 @@ router.get('/meta', (_req, res) => {
     lastSync: status.lastSync || 0,
     lastDurationMs: status.lastDurationMs || 0,
     syncing: isSyncing(),
+    fresh: isFreshStart() ? 1 : 0,
     total: products.length,
     underTarget,
     alertsSent: status.alertsSent || 0,

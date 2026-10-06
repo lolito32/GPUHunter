@@ -99,9 +99,14 @@ Los datos viven en `data/db.json` (tmp + rename atómico): productos con histori
 
 1. Subí el repo a GitHub y creá un **Web Service**.
 2. Build command: `npm install` · Start command: `npm start`.
-3. **Disco (Disk) persistente** montado en `./data` para que no se pierdan precios y alertas entre deploys (sin disco, el estado se regenera en la primera corrida).
-4. Seteá `ADMIN_TOKEN` (y Telegram si querés alertas) en *Environment*.
-5. Abrí la URL pública, *Add to Home Screen* para instalarla como app.
+3. Seteá `ADMIN_TOKEN` (y Telegram si querés alertas) en *Environment*.
+4. Abrí la URL pública, *Add to Home Screen* para instalarla como app.
+
+**Respaldo automático de objetivos**: el plan gratis de Render borra `db.json` cada vez que el servicio se duerme o redespliega. Para que no se pierdan tus targets, la PWA los guarda en el `localStorage` del celular y, al abrir la app, detecta el arranque limpio del server (campo `fresh` en `GET /api/meta`) y los restaura sola con un `PUT /api/targets`. Flujo: dormirse → despertar → abrir la app → objetivos restaurados, sin pasos manuales.
+
+- Si seteaste `ADMIN_TOKEN`, cargá el mismo token una vez en **Ajustes** de la PWA (queda guardado en el celular) para que el restore pueda autenticarse.
+- Los productos se repueblan solos en el primer ciclo de scraping (~15 s).
+- Alternativa sin disco efímero: plan **Hobby ($7/mes)** con disco persistente montado en `./data`, o Railway con volumen.
 
 ## Despliegue en Railway
 

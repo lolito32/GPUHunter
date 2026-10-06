@@ -17,11 +17,17 @@ const emptyData = () => ({
 
 let data = emptyData();
 let saveTimer = null;
+let freshStart = false;
 
 function readDisk() {
   try {
-    if (!fs.existsSync(FILE)) return;
+    if (!fs.existsSync(FILE)) {
+      freshStart = true;
+      return;
+    }
     const parsed = JSON.parse(fs.readFileSync(FILE, 'utf8'));
+    if (!parsed || typeof parsed !== 'object') throw new Error('db inválida');
+    if (Object.keys(parsed.products || {}).length === 0) freshStart = true;
     data = {
       ...emptyData(),
       ...parsed,
@@ -39,8 +45,11 @@ function readDisk() {
     };
   } catch {
     data = emptyData();
+    freshStart = true;
   }
 }
+
+export const isFreshStart = () => freshStart;
 
 function writeDisk() {
   fs.mkdirSync(DATA_DIR, { recursive: true });

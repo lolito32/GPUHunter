@@ -37,7 +37,8 @@
     pages: 1,
     total: 0,
     loading: false,
-    metaAt: 0
+    metaAt: 0,
+    restoreTried: false
   };
 
   let pollTimer = null;
@@ -205,10 +206,37 @@
     try {
       state.meta = await api('/meta');
       state.metaAt = Date.now();
+      if (!state.meta.fresh) store.set('targets', state.meta.targets || {});
+      else maybeRestoreTargets(state.meta);
       renderStatus();
       renderChips();
     } catch (err) {
       $('status').textContent = 'Sin conexión con el servidor';
+    }
+  }
+
+  function sameTargets(a, b) {
+    const keys = Object.keys(a || {});
+    if (!keys.length) return true;
+    for (const k of keys) {
+      if (Number(a[k]) !== Number((b || {})[k])) return false;
+    }
+    return true;
+  }
+
+  async function maybeRestoreTargets(m) {
+    if (state.restoreTried) return;
+    state.restoreTried = true;
+    const backup = store.get('targets', null);
+    if (!backup || typeof backup !== 'object' || sameTargets(backup, m.targets)) return;
+    try {
+      const data = await api('/targets', { method: 'PUT', body: { targets: backup } });
+      state.meta.targets = data.targets;
+      store.set('targets', data.targets);
+      renderStatus();
+      renderTargets();
+    } catch {
+      // 401 (token) u otro error: se reintenta en la próxima apertura de la app
     }
   }
 
@@ -246,6 +274,7 @@
     try {
       const data = await api('/targets', { method: 'PUT', body: { targets } });
       state.meta.targets = data.targets;
+      store.set('targets', data.targets);
       msg.className = 'msg ok';
       msg.textContent = 'Objetivos guardados.';
     } catch (err) {
