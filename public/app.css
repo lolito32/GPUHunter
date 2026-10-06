@@ -175,6 +175,29 @@ body {
   contain-intrinsic-size: auto 118px;
 }
 
+.row-main {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.row-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.thumb {
+  flex: none;
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
+  background: #f4f4f5;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  padding: 3px;
+  box-sizing: border-box;
+}
+
 .row-top {
   display: flex;
   align-items: center;

@@ -21,12 +21,14 @@ export default {
         const name = (meta.name || link.text() || '').replace(/\s+/g, ' ').trim();
         const price = meta.price || parsePrice(box.find('.product-box-price .current-price').first().text());
         if (!name || !href || !price) return;
+        const img = box.find('img.img-contained').first().attr('src') || '';
         found.push({
           store: 'venex',
           id: meta.id || href.replace('https://www.venex.com.ar', '').replace(/\.html$/, ''),
           name,
           price,
-          url: href
+          url: href,
+          image: img ? absVenex(img) : ''
         });
       });
       items.push(...found);
@@ -36,6 +38,9 @@ export default {
     return dedupe(items);
   }
 };
+
+const absVenex = (src) =>
+  src.startsWith('http') ? src : `https://www.venex.com.ar/${src.replace(/^\/+/, '')}`;
 
 function parseMeta(onclick) {
   if (!onclick) return {};

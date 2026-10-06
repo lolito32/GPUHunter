@@ -114,6 +114,7 @@ router.get('/products', (req, res) => {
   const slice = list.slice(start, start + limit);
   const items = slice.map((p) => {
     const item = { st: p.store, nm: p.name, gp: p.gpu, pr: p.price, ur: p.url };
+    if (p.image) item.im = p.image;
     if (p.prevPrice && p.prevPrice !== p.price) item.dl = p.price - p.prevPrice;
     if (p.source) item.sc = p.source;
     if (targets[p.gpu] && p.price <= targets[p.gpu]) item.tg = 1;

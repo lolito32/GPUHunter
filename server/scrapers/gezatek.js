@@ -19,7 +19,14 @@ export default {
       for (const p of extractJsonLdProducts(html)) {
         if (!p.price || !p.inStock) continue;
         const id = (p.url.match(/-(\d+)\.html$/) || [])[1] || p.url;
-        items.push({ store: 'gezatek', id, name: p.name, price: Math.round(p.price), url: p.url });
+        items.push({
+          store: 'gezatek',
+          id,
+          name: p.name,
+          price: Math.round(p.price),
+          url: p.url,
+          image: p.image || ''
+        });
       }
       if (i < pages.length - 1) await delay(700);
     }

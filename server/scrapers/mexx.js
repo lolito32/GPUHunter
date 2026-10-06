@@ -21,12 +21,14 @@ export default {
         const href = link.attr('href') || '';
         const price = parsePrice(card.find('.price b').first().text());
         if (!name || !href || !price) return;
+        const img = card.find('img').first().attr('src') || '';
         found.push({
           store: 'mexx',
           id: (href.match(/\/(\d+)-[^/]*\.html/) || [])[1] || href,
           name,
           price,
-          url: absolute(href)
+          url: absolute(href),
+          image: img ? absolute(img) : ''
         });
       });
       items.push(...found);

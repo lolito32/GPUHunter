@@ -51,6 +51,7 @@ async function execute(trigger) {
         gpu: gpu.key,
         price: item.price,
         url: item.url,
+        image: item.image || '',
         source: item.source || ''
       });
     }

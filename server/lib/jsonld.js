@@ -46,7 +46,8 @@ export function extractJsonLdProducts(html) {
         name: node.name,
         url: node.url,
         price: priceOf(node),
-        inStock: !node.offers || availabilityOk(node.offers)
+        inStock: !node.offers || availabilityOk(node.offers),
+        image: firstImage(node.image)
       });
     }
     if (type === 'ItemList' && Array.isArray(node.itemListElement)) {
@@ -57,12 +58,21 @@ export function extractJsonLdProducts(html) {
           name: item.name,
           url: item.url,
           price: priceOf(item),
-          inStock: !item.offers || availabilityOk(item.offers)
+          inStock: !item.offers || availabilityOk(item.offers),
+          image: firstImage(item.image) || firstImage(entry.image)
         });
       }
     }
   }
   return items;
+}
+
+function firstImage(image) {
+  if (!image) return '';
+  const value = Array.isArray(image) ? image[0] : image;
+  if (typeof value === 'string') return value;
+  if (value && typeof value.url === 'string') return value.url;
+  return '';
 }
 
 function availabilityOk(offers) {

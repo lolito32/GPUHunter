@@ -14,12 +14,16 @@ export default {
       const price = p.precioEspecial || p.precioLista;
       if (!price || price <= 0) continue;
       if (p.stock !== undefined && p.stock !== null && Number(p.stock) <= 0) continue;
+      const img = p.imagenes && p.imagenes[0] && p.imagenes[0].nombre;
       items.push({
         store: 'compragamer',
         id: String(p.id_producto),
         name: p.nombre,
         price: Number(price),
-        url: `https://www.compragamer.com/producto/${slug(p.nombre)}_${p.id_producto}`
+        url: `https://www.compragamer.com/producto/${slug(p.nombre)}_${p.id_producto}`,
+        image: img
+          ? `https://imagenes.compragamer.com/productos/compragamer_Imganen_general_${img}-mini.jpg`
+          : ''
       });
     }
     return items;

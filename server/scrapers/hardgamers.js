@@ -40,13 +40,15 @@ export default {
         const coveredKey = HG_TO_STORE[normalize(storeName)];
         if (coveredKey && covered.includes(coveredKey)) return;
 
+        const img = card.find('img[itemprop="image"]').first().attr('src') || '';
         found.push({
           store: 'hardgamers',
           id: href.replace('https://www.hardgamers.com.ar', '').replace('/product/', ''),
           name,
           price,
           url: href.startsWith('http') ? href : `https://www.hardgamers.com.ar${href}`,
-          source: storeName
+          source: storeName,
+          image: img ? (img.startsWith('http') ? img : `https://www.hardgamers.com.ar${img}`) : ''
         });
       });
       items.push(...found);

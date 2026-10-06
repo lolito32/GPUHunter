@@ -124,15 +124,22 @@
     }
     const source = item.sc ? '<span class="via">via ' + esc(item.sc) + '</span>' : '';
     const tag = deal ? '<span class="deal-tag">bajo objetivo</span>' : '';
+    const thumb = item.im
+      ? '<img class="thumb" src="' +
+        esc(item.im) +
+        '" alt="" width="62" height="62" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">'
+      : '';
     return (
-      '<article class="row-item">' +
+      '<article class="row-item"><div class="row-main">' +
+      thumb +
+      '<div class="row-col">' +
       '<div class="row-top"><span class="store-pill">' + esc(storeName(item.st)) + '</span>' +
       source + tag + '</div>' +
       '<h3 class="name">' + esc(item.nm) + '</h3>' +
       '<div class="row-bottom"><div class="price-wrap"><span class="price">' + money(item.pr) +
       '</span>' + delta + '</div>' +
       '<a class="go" href="' + esc(item.ur) + '" target="_blank" rel="noopener noreferrer">Ver</a>' +
-      '</div></article>'
+      '</div></div></div></article>'
     );
   }
 
