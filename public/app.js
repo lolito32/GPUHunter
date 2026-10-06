@@ -122,15 +122,16 @@
         money(Math.abs(item.dl)) +
         '</span>';
     }
-    const source = item.sc ? '<span>via ' + esc(item.sc) + '</span>' : '';
+    const source = item.sc ? '<span class="via">via ' + esc(item.sc) + '</span>' : '';
     const tag = deal ? '<span class="deal-tag">bajo objetivo</span>' : '';
     return (
       '<article class="row-item">' +
-      '<div class="row-main"><h3 class="name">' + esc(item.nm) + '</h3>' +
-      '<p class="sub"><span class="store-name">' + esc(storeName(item.st)) + '</span>' +
-      source + tag + '</p></div>' +
-      '<div class="row-side"><span class="price">' + money(item.pr) + '</span>' + delta +
-      '<a class="link" href="' + esc(item.ur) + '" target="_blank" rel="noopener noreferrer">ver oferta</a>' +
+      '<div class="row-top"><span class="store-pill">' + esc(storeName(item.st)) + '</span>' +
+      source + tag + '</div>' +
+      '<h3 class="name">' + esc(item.nm) + '</h3>' +
+      '<div class="row-bottom"><div class="price-wrap"><span class="price">' + money(item.pr) +
+      '</span>' + delta + '</div>' +
+      '<a class="go" href="' + esc(item.ur) + '" target="_blank" rel="noopener noreferrer">Ver</a>' +
       '</div></article>'
     );
   }

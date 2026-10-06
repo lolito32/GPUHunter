@@ -1,4 +1,4 @@
-const CACHE = 'gpuhunter-v2';
+const CACHE = 'gpuhunter-v3';
 const SHELL = [
   './',
   'index.html',

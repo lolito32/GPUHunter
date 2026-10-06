@@ -18,10 +18,12 @@ app.use('/api', api);
 app.use(
   express.static(PUBLIC_DIR, {
     index: 'index.html',
-    maxAge: '1h',
+    maxAge: '0',
     setHeaders(res, filePath) {
-      if (filePath.endsWith('sw.js') || filePath.endsWith('index.html') || filePath.endsWith('manifest.webmanifest')) {
+      if (/\.(html|css|js|webmanifest)$/.test(filePath) || filePath.endsWith('sw.js')) {
         res.setHeader('Cache-Control', 'no-cache');
+      } else if (filePath.includes('icons')) {
+        res.setHeader('Cache-Control', 'public, max-age=86400');
       }
     }
   })

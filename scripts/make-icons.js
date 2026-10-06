@@ -69,9 +69,9 @@ function icon(size, maskable) {
       const inside = x >= x0 && x < x1 && y >= y0 && y < y1;
       const rounded = inside && (x - cx) ** 2 + (y - cy) ** 2 <= rr * rr;
       if (!rounded) {
-        px[i] = 250;
-        px[i + 1] = 249;
-        px[i + 2] = 247;
+        px[i] = 12;
+        px[i + 1] = 13;
+        px[i + 2] = 14;
         px[i + 3] = maskable ? 255 : 0;
         continue;
       }
@@ -95,12 +95,12 @@ function icon(size, maskable) {
       const inPin = y >= pinY0 && y <= pinY1 && x >= cardX1 - (cardX1 - cardX0) * 0.18 && x <= cardX1 - (cardX1 - cardX0) * 0.06;
       const inSlot = x >= cardX1 - (cardX1 - cardX0) * 0.5 && x <= cardX1 - (cardX1 - cardX0) * 0.36 && y >= fanCy - fanR * 0.55 && y <= fanCy + fanR * 0.55;
 
-      let color = [250, 249, 247];
-      if (inCard) color = [250, 249, 247];
+      let color = [24, 25, 28];
+      if (inCard) color = [24, 25, 28];
       if (inCard && (x - cardX0 <= border || cardX1 - x <= border || y - cardY0 <= border || cardY1 - y <= border))
-        color = [28, 27, 24];
-      if (inFan) color = [110, 107, 99];
-      if (inSlot || inPin) color = [28, 27, 24];
+        color = [237, 237, 237];
+      if (inFan) color = [113, 113, 122];
+      if (inSlot || inPin) color = [237, 237, 237];
 
       px[i] = color[0];
       px[i + 1] = color[1];

@@ -115,3 +115,4 @@ Los datos viven en `data/db.json` (tmp + rename atómico): productos con histori
 - **MalditoHard**: si el dominio está caído, la tienda queda en 0 ofertas sin romper el ciclo.
 - Cada corrida tarda ~15 s con 6 tiendas directas + HardGamers (pool de 3 requests en paralelo).
 - La PWA cachea el shell; los datos se piden siempre a la red con fallback offline.
+#
