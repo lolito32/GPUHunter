@@ -35,11 +35,6 @@ export const STORES = [
 export const STORE_BY_KEY = Object.fromEntries(STORES.map((s) => [s.key, s]));
 
 export const DEFAULT_SETTINGS = {
-  telegram: {
-    token: process.env.TELEGRAM_BOT_TOKEN || '',
-    chatId: process.env.TELEGRAM_CHAT_ID || '',
-    enabled: Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID)
-  },
   stores: Object.fromEntries(STORES.map((s) => [s.key, true])),
   intervalMin: SYNC_INTERVAL_MIN,
   maxPages: MAX_PAGES,

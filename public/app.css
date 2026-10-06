@@ -487,6 +487,38 @@ h2 {
 .bottom a:hover { color: var(--muted); }
 .bottom a.active { color: var(--price); }
 
+.push-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  top: env(safe-area-inset-top);
+  z-index: 40;
+  background: #f4f4f5;
+  color: #18181b;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  transform: translateY(-120%);
+  opacity: 0;
+  transition: transform .25s ease, opacity .25s ease;
+}
+
+.push-banner.on {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.push-banner .pb-title {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.push-banner .pb-body {
+  font-size: 12.5px;
+  margin-top: 2px;
+  color: #52525b;
+}
+
 @media (min-width: 720px) {
   .view { padding-top: 24px; }
 }

@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="app.css?v=6">
+<link rel="stylesheet" href="app.css?v=7">
 </head>
 <body>
 <header class="top">
@@ -41,7 +41,7 @@
   </section>
 
   <section id="view-targets" class="panel hidden">
-    <p class="hint">Precio máximo dispuesto a pagar. Si una oferta baja de este valor, llega el aviso por Telegram.</p>
+    <p class="hint">Precio máximo dispuesto a pagar. Si una oferta baja de este valor, llega el aviso.</p>
     <div id="targets-list" class="targets"></div>
     <div class="center">
       <button id="btn-save-targets" class="btn primary" type="button">Guardar objetivos</button>
@@ -50,14 +50,13 @@
   </section>
 
   <section id="view-config" class="panel hidden">
-    <h2>Telegram</h2>
-    <label class="field"><span>Token del bot</span><input id="tg-token" type="password" placeholder="123456:ABC-DEF" autocomplete="off"></label>
-    <label class="field"><span>Chat ID</span><input id="tg-chat" type="text" inputmode="numeric" placeholder="-1001234567890" autocomplete="off"></label>
+    <h2>Notificaciones</h2>
+    <p class="hint">La app Android te avisa por notificación push cuando una placa baja de tu objetivo.</p>
+    <label class="field"><span>URL del servidor</span><input id="api-url" type="url" inputmode="url" autocomplete="off" placeholder="https://tu-app.onrender.com"></label>
     <div class="row">
-      <label class="switch"><input id="tg-enabled" type="checkbox"><span>Avisos activados</span></label>
-      <button id="btn-test-tg" class="btn small" type="button">Probar</button>
+      <button id="btn-enable-push" class="btn primary" type="button">Activar alertas en este dispositivo</button>
     </div>
-    <div id="tg-msg" class="msg"></div>
+    <div id="push-msg" class="msg"></div>
 
     <h2>Tiendas</h2>
     <div id="stores-list" class="stores"></div>
@@ -88,6 +87,6 @@
   </a>
 </nav>
 
-<script src="app.js?v=6" defer></script>
+<script src="app.js?v=7" defer></script>
 </body>
 </html>

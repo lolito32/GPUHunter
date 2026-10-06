@@ -12,6 +12,7 @@ const emptyData = () => ({
   targets: { ...DEFAULT_TARGETS },
   settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
   alerts: {},
+  devices: {},
   status: { lastSync: 0, lastDurationMs: 0, lastRun: null, runs: [], alertsSent: 0 }
 });
 
@@ -35,12 +36,9 @@ function readDisk() {
       settings: {
         ...JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
         ...(parsed.settings || {}),
-        telegram: {
-          ...DEFAULT_SETTINGS.telegram,
-          ...((parsed.settings && parsed.settings.telegram) || {})
-        },
         stores: { ...DEFAULT_SETTINGS.stores, ...((parsed.settings && parsed.settings.stores) || {}) }
       },
+      devices: parsed.devices && typeof parsed.devices === 'object' ? parsed.devices : {},
       status: { ...emptyData().status, ...(parsed.status || {}) }
     };
   } catch {
@@ -98,7 +96,6 @@ export function setSettings(patch) {
   data.settings = {
     ...data.settings,
     ...patch,
-    telegram: { ...data.settings.telegram, ...(patch.telegram || {}) },
     stores: { ...data.settings.stores, ...(patch.stores || {}) }
   };
   scheduleSave();
@@ -125,6 +122,33 @@ export function markAlerted(id, price, ts = Date.now()) {
 }
 export function recordAlert() {
   data.status.alertsSent = (data.status.alertsSent || 0) + 1;
+}
+
+export function getDevices() {
+  return data.devices || {};
+}
+
+export function registerDevice({ token, platform = 'android', model = '' }) {
+  if (!token || typeof token !== 'string') return false;
+  const clean = token.trim();
+  if (!clean) return false;
+  if (!data.devices) data.devices = {};
+  const now = Date.now();
+  data.devices[clean] = {
+    registeredAt: data.devices[clean]?.registeredAt || now,
+    lastSeen: now,
+    platform: platform || 'android',
+    model: model || ''
+  };
+  scheduleSave();
+  return true;
+}
+
+export function unregisterDevice(token) {
+  if (!token || !data.devices || !data.devices[token]) return false;
+  delete data.devices[token];
+  scheduleSave();
+  return true;
 }
 
 export function mergeProducts(list, seenAt = Date.now()) {

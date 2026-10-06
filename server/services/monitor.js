@@ -1,35 +1,29 @@
-import { getTargets, getSettings, getAlert, markAlerted, recordAlert } from '../store.js';
+import { getTargets, getSettings, getAlert, markAlerted, recordAlert, getDevices } from '../store.js';
 import { STORE_BY_KEY } from '../config.js';
 import { labelForKey } from '../gpu.js';
 import { formatARS } from '../lib/price.js';
-import { escapeHtml, sendQueue } from './telegram.js';
+import { sendPushToDevices } from './fcm.js';
 
-function buildMessage(product, from, to, target) {
+function buildTitle(product) {
+  return `${labelForKey(product.gpu)} bajo el objetivo`;
+}
+
+function buildBody(product, from, to, target) {
   const store = STORE_BY_KEY[product.store];
   const storeName = store ? store.name : product.store;
-  const source = product.source ? ` (vía ${escapeHtml(product.source)})` : '';
-  const before = from > to ? ` · bajo de ${formatARS(from)}` : '';
-  return [
-    `<b>${escapeHtml(labelForKey(product.gpu))}</b> bajo el objetivo${source}`,
-    `Tienda: <b>${escapeHtml(storeName)}</b>`,
-    `Precio: <b>${formatARS(to)}</b>${before}`,
-    `Objetivo: ${formatARS(target)}`,
-    `<a href="${escapeHtml(product.url)}">Ver oferta</a>`
-  ].join('\n');
+  const before = from > to ? ` · bajó de ${formatARS(from)}` : '';
+  return `${storeName}: ${formatARS(to)}${before} (objetivo ${formatARS(target)})`;
 }
 
 const MAX_ALERTS_PER_RUN = 6;
 
 export async function processDrops(drops) {
   const settings = getSettings();
-  const tg = settings.telegram || {};
-  if (!tg.enabled || !tg.token || !tg.chatId) {
-    return { sent: 0, reason: 'telegram-sin-configurar' };
-  }
+  const devices = getDevices();
   const targets = getTargets();
   const now = Date.now();
   const cooldownMs = (settings.alertCooldownMin || 720) * 60 * 1000;
-  const messages = [];
+  const notifications = [];
 
   for (const { product, from, to } of drops) {
     const target = targets[product.gpu];
@@ -40,13 +34,38 @@ export async function processDrops(drops) {
       if (now - alert.t < cooldownMs) continue;
     }
     markAlerted(product.id, to, now);
-    messages.push(buildMessage(product, from, to, target));
+    notifications.push({
+      product,
+      from,
+      to,
+      target,
+      payload: {
+        title: buildTitle(product),
+        body: buildBody(product, from, to, target),
+        image: product.image || '',
+        url: product.url,
+        data: {
+          url: product.url,
+          gpu: String(product.gpu),
+          price: String(to),
+          target: String(target),
+          store: String(product.store)
+        }
+      }
+    });
   }
 
-  if (messages.length === 0) return { sent: 0 };
+  if (notifications.length === 0) return { sent: 0 };
+  if (Object.keys(devices).length === 0) return { sent: 0, reason: 'sin-dispositivos-registrados' };
 
-  const queue = messages.slice(0, MAX_ALERTS_PER_RUN);
-  const result = await sendQueue(tg.token, tg.chatId, queue);
-  for (let i = 0; i < result.sent; i++) recordAlert();
-  return { sent: result.sent, errors: result.errors, skipped: messages.length - queue.length };
+  const queue = notifications.slice(0, MAX_ALERTS_PER_RUN);
+  let sent = 0;
+  let errors = 0;
+  for (const n of queue) {
+    const r = await sendPushToDevices(devices, n.payload);
+    sent += r.sent;
+    errors += r.errors || 0;
+  }
+  for (let i = 0; i < sent; i++) recordAlert();
+  return { sent, errors, skipped: notifications.length - queue.length };
 }

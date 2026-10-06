@@ -1,0 +1,14 @@
+{
+  "appId": "ar.com.gpuhunter",
+  "appName": "GPUHunter",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}

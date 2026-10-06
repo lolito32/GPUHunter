@@ -16,7 +16,8 @@ import {
 } from './store.js';
 import { labelForKey } from './gpu.js';
 import { runSync, isSyncing } from './services/sync.js';
-import { getMe, sendMessage } from './services/telegram.js';
+import { registerDevice, unregisterDevice, getDevices } from './store.js';
+import { isFcmConfigured } from './services/fcm.js';
 
 const router = express.Router();
 
@@ -160,15 +161,6 @@ router.put('/settings', adminOnly, (req, res) => {
   const current = getSettings();
   const patch = {};
 
-  if (body.telegram && typeof body.telegram === 'object') {
-    const tg = { ...current.telegram };
-    const token = body.telegram.token;
-    if (typeof token === 'string' && token && !token.includes('*')) tg.token = token.trim();
-    if (typeof body.telegram.chatId === 'string') tg.chatId = body.telegram.chatId.trim();
-    if (typeof body.telegram.enabled === 'boolean') tg.enabled = body.telegram.enabled;
-    if (tg.token && tg.chatId) tg.enabled = body.telegram.enabled !== false;
-    patch.telegram = tg;
-  }
   if (body.stores && typeof body.stores === 'object') {
     patch.stores = { ...current.stores };
     for (const store of STORES) {
@@ -185,6 +177,25 @@ router.put('/settings', adminOnly, (req, res) => {
   res.json(publicSettings());
 });
 
+router.post('/register-device', (req, res) => {
+  const body = req.body || {};
+  if (body.remove) {
+    const ok = unregisterDevice(body.token);
+    res.json({ ok, devices: Object.keys(getDevices()).length });
+    return;
+  }
+  const ok = registerDevice({
+    token: body.token,
+    platform: body.platform,
+    model: body.model
+  });
+  if (!ok) {
+    res.status(400).json({ error: 'token inválido' });
+    return;
+  }
+  res.json({ ok: true, devices: Object.keys(getDevices()).length, fcm: isFcmConfigured() });
+});
+
 router.post('/sync', adminOnly, (req, res) => {
   if (isSyncing()) {
     res.status(202).json({ queued: false, busy: true });
@@ -194,44 +205,19 @@ router.post('/sync', adminOnly, (req, res) => {
   res.status(202).json({ queued: true });
 });
 
-router.post('/telegram/test', adminOnly, async (req, res) => {
-  const current = getSettings().telegram;
-  const token = (req.body && req.body.token) || current.token;
-  const chatId = (req.body && req.body.chatId) || current.chatId;
-  if (!token || !chatId) {
-    res.status(400).json({ error: 'Falta token o chat ID' });
-    return;
-  }
-  try {
-    await getMe(token);
-    await sendMessage(token, chatId, `<b>GPUHunter</b>: conexión verificada. Los avisos de precios están activos.`);
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
 function publicSettings() {
   const settings = getSettings();
-  const token = settings.telegram.token || '';
   return {
-    telegram: {
-      tokenMasked: token ? mask(token) : '',
-      configured: Boolean(token && settings.telegram.chatId),
-      chatId: settings.telegram.chatId || '',
-      enabled: Boolean(settings.telegram.enabled)
-    },
     stores: { ...settings.stores },
     intervalMin: settings.intervalMin || SYNC_INTERVAL_MIN,
     maxPages: settings.maxPages || MAX_PAGES,
     alertCooldownMin: settings.alertCooldownMin || 720,
     notifyOnlyOnNewLow: settings.notifyOnlyOnNewLow !== false,
-    adminTokenRequired: Boolean(ADMIN_TOKEN)
+    adminTokenRequired: Boolean(ADMIN_TOKEN),
+    devices: Object.keys(getDevices()).length,
+    fcm: isFcmConfigured()
   };
 }
-
-const mask = (token) =>
-  token.length <= 8 ? '********' : `${token.slice(0, 4)}${'*'.repeat(Math.max(4, token.length - 8))}${token.slice(-4)}`;
 
 const normalize = (value) =>
   String(value || '')

@@ -48,7 +48,7 @@
     const token = store.get('admin', '');
     if (token) headers['x-admin-token'] = token;
     if (options.body) headers['content-type'] = 'application/json';
-    const res = await fetch('/api' + path, {
+    const res = await fetch((store.get('api', '') || '') + '/api' + path, {
       method: options.method || 'GET',
       headers,
       body: options.body ? JSON.stringify(options.body) : undefined
@@ -60,6 +60,71 @@
       throw err;
     }
     return data;
+  }
+
+  const isNative = () =>
+    !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+
+  function getPush() {
+    try {
+      const c = window.Capacitor;
+      if (!c) return null;
+      if (c.Plugins && c.Plugins.PushNotifications) return c.Plugins.PushNotifications;
+      if (typeof c.registerPlugin === 'function') return c.registerPlugin('PushNotifications');
+    } catch {}
+    return null;
+  }
+
+  function showPushBanner(note) {
+    let el = document.getElementById('push-banner');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'push-banner';
+      el.className = 'push-banner';
+      document.body.appendChild(el);
+      el.addEventListener('click', () => {
+        const url = (note && (note.data && note.data.url)) || '';
+        if (url) window.open(url, '_blank');
+        el.classList.remove('on');
+      });
+    }
+    const body = (note && (note.body || (note.data && note.data.body))) || '';
+    el.innerHTML =
+      '<div class="pb-title">' + esc((note && (note.title || (note.data && note.data.title))) || 'GPUHunter') +
+      '</div>' + (body ? '<div class="pb-body">' + esc(body) + '</div>' : '');
+    el.classList.add('on');
+    clearTimeout(showPushBanner._t);
+    showPushBanner._t = setTimeout(() => el.classList.remove('on'), 7000);
+  }
+
+  async function registerDeviceToken(token) {
+    const body = { token, platform: isNative() ? 'android' : 'web' };
+    const res = await api('/register-device', { method: 'POST', body });
+    store.set('push_on', true);
+    store.set('push_token', token);
+    return res;
+  }
+
+  async function enrollPush(force) {
+    const push = getPush();
+    if (!push) return { activated: false, reason: 'no-native' };
+    let token = store.get('push_token', '');
+    if (!token || force) {
+      if (force) {
+        const p = await push.requestPermissions();
+        if (p && p.receive === 'denied') return { activated: false, reason: 'denied' };
+      }
+      const t = await push.getToken();
+      token = t && t.value;
+      if (!token) return { activated: false, reason: 'no-token' };
+    }
+    push.addListener('pushNotificationReceived', (n) => showPushBanner(n.notification || n));
+    push.addListener('pushNotificationActionPerformed', (r) => {
+      const url = r && r.notification && r.notification.data && r.notification.data.url;
+      if (url) window.open(url, '_blank');
+    });
+    await registerDeviceToken(token);
+    return { activated: true };
   }
 
   function timeAgo(ts) {
@@ -288,9 +353,7 @@
   async function loadConfig() {
     try {
       const s = await api('/settings');
-      $('tg-token').placeholder = s.telegram.tokenMasked || '123456:ABC-DEF…';
-      $('tg-chat').value = s.telegram.chatId || '';
-      $('tg-enabled').checked = s.telegram.enabled;
+      $('api-url').value = store.get('api', '');
       $('interval').value = s.intervalMin;
       $('maxpages').value = s.maxPages;
       renderStoresFromSettings(s.stores, store.get('stores', null));
@@ -323,29 +386,23 @@
     document.querySelectorAll('[data-store-key]').forEach((box) => {
       stores[box.dataset.storeKey] = box.checked;
     });
-    const token = $('tg-token').value.trim();
-    const body = {
-      telegram: {
-        chatId: $('tg-chat').value.trim(),
-        enabled: $('tg-enabled').checked
-      },
-      stores,
-      intervalMin: Number($('interval').value),
-      maxPages: Number($('maxpages').value)
-    };
-    if (token && !token.includes('*')) body.telegram.token = token;
     const admin = $('admin-token').value.trim();
     if (admin) {
       store.set('admin', admin);
     }
+    const apiUrl = $('api-url').value.trim().replace(/\/+$/, '');
+    store.set('api', apiUrl);
+    const body = {
+      stores,
+      intervalMin: Number($('interval').value),
+      maxPages: Number($('maxpages').value)
+    };
     btn.disabled = true;
     msg.className = 'msg';
     msg.textContent = 'Guardando…';
     try {
       const data = await api('/settings', { method: 'PUT', body });
       store.set('stores', data.stores);
-      $('tg-token').value = '';
-      $('tg-token').placeholder = data.telegram.tokenMasked || 'sin token';
       msg.className = 'msg ok';
       msg.textContent = 'Ajustes guardados.';
       await loadMeta();
@@ -355,25 +412,6 @@
       msg.textContent = err.status === 401 ? 'Token de admin inválido o ausente.' : err.message;
     } finally {
       btn.disabled = false;
-    }
-  }
-
-  async function testTelegram() {
-    const msg = $('tg-msg');
-    const token = $('tg-token').value.trim();
-    const chatId = $('tg-chat').value.trim();
-    const body = {};
-    if (token && !token.includes('*')) body.token = token;
-    if (chatId) body.chatId = chatId;
-    msg.className = 'msg';
-    msg.textContent = 'Enviando prueba…';
-    try {
-      await api('/telegram/test', { method: 'POST', body });
-      msg.className = 'msg ok';
-      msg.textContent = 'Mensaje de prueba enviado. Revisá Telegram.';
-    } catch (err) {
-      msg.className = 'msg err';
-      msg.textContent = err.status === 401 ? 'Token de admin requerido.' : err.message;
     }
   }
 
@@ -475,12 +513,38 @@
   $('btn-sync').addEventListener('click', syncNow);
   $('btn-save-targets').addEventListener('click', saveTargets);
   $('btn-save-config').addEventListener('click', saveConfig);
-  $('btn-test-tg').addEventListener('click', testTelegram);
+  $('btn-enable-push').addEventListener('click', async () => {
+    const msg = $('push-msg');
+    msg.className = 'msg';
+    msg.textContent = 'Activando alertas…';
+    try {
+      if (!store.get('api', '')) {
+        msg.className = 'msg err';
+        msg.textContent = 'Completá primero la URL del servidor (arriba) y toca Guardar ajustes.';
+        return;
+      }
+      const r = await enrollPush(true);
+      if (!r.activated) {
+        msg.className = 'msg err';
+        msg.textContent =
+          r.reason === 'no-native' ? 'Las notificaciones nativas solo funcionan en la app Android instalada.' : 'No se pudo activar las alertas.';
+        return;
+      }
+      msg.className = 'msg ok';
+      msg.textContent = 'Alertas activadas en este dispositivo.';
+    } catch (e) {
+      msg.className = 'msg err';
+      msg.textContent = e.message || 'No se pudo activar las alertas';
+    }
+  });
   window.addEventListener('hashchange', route);
 
   async function boot() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+    if (isNative() && store.get('push_on', false) && store.get('api', '')) {
+      enrollPush(false).catch(() => {});
     }
     await loadMeta();
     route();
