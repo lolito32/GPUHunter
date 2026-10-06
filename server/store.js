@@ -131,7 +131,7 @@ export function getDevices() {
 export function registerDevice({ token, platform = 'android', model = '' }) {
   if (!token || typeof token !== 'string') return false;
   const clean = token.trim();
-  if (!clean) return false;
+  if (clean.length < 20) return false;
   if (!data.devices) data.devices = {};
   const now = Date.now();
   data.devices[clean] = {

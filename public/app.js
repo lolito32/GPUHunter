@@ -105,9 +105,31 @@
     return res;
   }
 
+  let pushListenersReady = false;
+
+  function setupPushListeners(push) {
+    if (pushListenersReady) return;
+    pushListenersReady = true;
+    push.addListener('pushNotificationReceived', (n) => showPushBanner(n.notification || n));
+    push.addListener('pushNotificationActionPerformed', (r) => {
+      const url = r && r.notification && r.notification.data && r.notification.data.url;
+      if (url) window.open(url, '_blank');
+    });
+  }
+
   async function enrollPush(force) {
     const push = getPush();
     if (!push) return { activated: false, reason: 'no-native' };
+    try {
+      await push.createChannel({
+        id: 'gpuhunter-alerts',
+        name: 'Alertas GPUHunter',
+        description: 'Ofertas por debajo de tu objetivo',
+        importance: 5,
+        vibration: true,
+        sound: 'default'
+      });
+    } catch {}
     let token = store.get('push_token', '');
     if (!token || force) {
       if (force) {
@@ -118,11 +140,7 @@
       token = t && t.value;
       if (!token) return { activated: false, reason: 'no-token' };
     }
-    push.addListener('pushNotificationReceived', (n) => showPushBanner(n.notification || n));
-    push.addListener('pushNotificationActionPerformed', (r) => {
-      const url = r && r.notification && r.notification.data && r.notification.data.url;
-      if (url) window.open(url, '_blank');
-    });
+    setupPushListeners(push);
     await registerDeviceToken(token);
     return { activated: true };
   }
@@ -543,7 +561,12 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
-    if (isNative() && store.get('push_on', false) && store.get('api', '')) {
+    if (
+      isNative() &&
+      store.get('push_on', false) &&
+      store.get('push_token', '') &&
+      store.get('api', '')
+    ) {
       enrollPush(false).catch(() => {});
     }
     await loadMeta();

@@ -62,7 +62,7 @@ export async function processDrops(drops) {
   let sent = 0;
   let errors = 0;
   for (const n of queue) {
-    const r = await sendPushToDevices(devices, n.payload);
+    const r = await sendPushToDevices(getDevices(), n.payload);
     sent += r.sent;
     errors += r.errors || 0;
   }

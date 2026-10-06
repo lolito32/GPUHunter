@@ -21,6 +21,14 @@ import { isFcmConfigured } from './services/fcm.js';
 
 const router = express.Router();
 
+router.use((req, res, next) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'content-type, x-admin-token');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 const adminOnly = (req, res, next) => {
   if (!ADMIN_TOKEN) return next();
   if (req.get('x-admin-token') === ADMIN_TOKEN) return next();

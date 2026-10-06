@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "590110150767",
+    "project_id": "gpuhunter-642ca",
+    "storage_bucket": "gpuhunter-642ca.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:590110150767:android:e8cd133fea5f33fc423d9a",
+        "android_client_info": {
+          "package_name": "ar.com.gpuhunter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6nIQi8sXjgqMq5R9jmJRvCwQghu4huvw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

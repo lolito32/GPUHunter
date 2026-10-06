@@ -44,7 +44,10 @@ function tryInit() {
 }
 
 export function isFcmConfigured() {
-  return Boolean(process.env.FIREBASE_SERVICE_ACCOUNT);
+  return Boolean(
+    process.env.FIREBASE_SERVICE_ACCOUNT ||
+      fs.existsSync(path.join(DATA_DIR, 'firebase-service-account.json'))
+  );
 }
 
 export async function sendPushToDevices(devices, payload) {
