@@ -1,0 +1,20 @@
+{
+  "name": "gpuhunter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monitor de precios de GPUs para tiendas argentinas - PWA ultra liviana + backend Node.js",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "sync": "node server/cli-sync.js",
+    "icons": "node scripts/make-icons.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "express": "^4.21.2"
+  }
+}
