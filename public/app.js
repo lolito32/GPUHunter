@@ -118,19 +118,19 @@
       const down = item.dl < 0;
       delta =
         '<span class="delta ' + (down ? 'down' : 'up') + '">' +
-        (down ? '▼' : '▲') +
+        (down ? '-' : '+') +
         money(Math.abs(item.dl)) +
         '</span>';
     }
-    const source = item.sc ? '<span>vía ' + esc(item.sc) + '</span>' : '';
+    const source = item.sc ? '<span>via ' + esc(item.sc) + '</span>' : '';
+    const tag = deal ? '<span class="deal-tag">bajo objetivo</span>' : '';
     return (
-      '<article class="card' + (deal ? ' deal' : '') + '">' +
-      '<div class="card-top"><h3 class="name">' + esc(item.nm) + '</h3>' +
-      (deal ? '<span class="badge">BAJO OBJETIVO</span>' : '') +
-      '</div>' +
-      '<p class="sub"><span class="store-tag">' + esc(storeName(item.st)) + '</span>' + source + '</p>' +
-      '<div class="card-bottom"><div><span class="price">' + money(item.pr) + '</span>' + delta + '</div>' +
-      '<a class="go" href="' + esc(item.ur) + '" target="_blank" rel="noopener noreferrer">Ver</a>' +
+      '<article class="row-item">' +
+      '<div class="row-main"><h3 class="name">' + esc(item.nm) + '</h3>' +
+      '<p class="sub"><span class="store-name">' + esc(storeName(item.st)) + '</span>' +
+      source + tag + '</p></div>' +
+      '<div class="row-side"><span class="price">' + money(item.pr) + '</span>' + delta +
+      '<a class="link" href="' + esc(item.ur) + '" target="_blank" rel="noopener noreferrer">ver oferta</a>' +
       '</div></article>'
     );
   }

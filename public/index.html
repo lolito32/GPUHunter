@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#0d1117">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#faf9f7">
 <meta name="description" content="Monitor de precios de placas de video en tiendas argentinas">
 <title>GPUHunter</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -14,37 +14,34 @@
 </head>
 <body>
 <header class="top">
-  <div class="brand">
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 10h4M15 14h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    <span>GPUHunter</span>
-  </div>
-  <div class="status" id="status" role="status">Cargando…</div>
+  <a class="wordmark" href="#/">GPUHunter</a>
+  <div class="status" id="status" role="status">Cargando</div>
   <button class="icon-btn" id="btn-sync" type="button" title="Sincronizar ahora" aria-label="Sincronizar ahora">
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 5v6h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M20 5v6h-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
 </header>
 
 <main id="view" class="view">
   <section id="view-offers" class="panel">
     <div class="toolbar">
-      <input id="q" class="search" type="search" placeholder="Buscar modelo o marca…" autocomplete="off" enterkeyhint="search">
+      <input id="q" class="search" type="search" placeholder="Buscar modelo o marca" autocomplete="off" enterkeyhint="search">
       <select id="sort" class="sort" aria-label="Ordenar">
         <option value="price-asc">Menor precio</option>
         <option value="price-desc">Mayor precio</option>
         <option value="name">Nombre</option>
       </select>
     </div>
-    <div class="chips" id="chips-gpu" role="tablist" aria-label="Filtrar por GPU"></div>
+    <div class="chips" id="chips-gpu" aria-label="Filtrar por GPU"></div>
     <div class="chips" id="chips-store" aria-label="Filtrar por tienda"></div>
     <div class="meta-line" id="list-meta"></div>
     <div id="list" class="list"></div>
     <div class="center">
-      <button id="btn-more" class="btn ghost hidden" type="button">Cargar más</button>
+      <button id="btn-more" class="btn hidden" type="button">Cargar más</button>
     </div>
   </section>
 
   <section id="view-targets" class="panel hidden">
-    <p class="hint">Precio máximo que estás dispuesto a pagar. Si una oferta baja de este valor llega la alerta por Telegram.</p>
+    <p class="hint">Precio máximo dispuesto a pagar. Si una oferta baja de este valor, llega el aviso por Telegram.</p>
     <div id="targets-list" class="targets"></div>
     <div class="center">
       <button id="btn-save-targets" class="btn primary" type="button">Guardar objetivos</button>
@@ -54,11 +51,11 @@
 
   <section id="view-config" class="panel hidden">
     <h2>Telegram</h2>
-    <label class="field"><span>Token del bot</span><input id="tg-token" type="password" placeholder="123456:ABC-DEF…" autocomplete="off"></label>
+    <label class="field"><span>Token del bot</span><input id="tg-token" type="password" placeholder="123456:ABC-DEF" autocomplete="off"></label>
     <label class="field"><span>Chat ID</span><input id="tg-chat" type="text" inputmode="numeric" placeholder="-1001234567890" autocomplete="off"></label>
     <div class="row">
-      <label class="switch"><input id="tg-enabled" type="checkbox"><span>Alertas activadas</span></label>
-      <button id="btn-test-tg" class="btn ghost" type="button">Probar</button>
+      <label class="switch"><input id="tg-enabled" type="checkbox"><span>Avisos activados</span></label>
+      <button id="btn-test-tg" class="btn small" type="button">Probar</button>
     </div>
     <div id="tg-msg" class="msg"></div>
 
@@ -66,9 +63,9 @@
     <div id="stores-list" class="stores"></div>
 
     <h2>Sincronización</h2>
-    <label class="field"><span>Cada cuántos minutos (10-15)</span><input id="interval" type="number" min="5" max="120" inputmode="numeric"></label>
+    <label class="field"><span>Cada cuántos minutos</span><input id="interval" type="number" min="5" max="120" inputmode="numeric"></label>
     <label class="field"><span>Páginas por tienda</span><input id="maxpages" type="number" min="1" max="8" inputmode="numeric"></label>
-    <label class="field"><span>Token de admin (si el servidor usa ADMIN_TOKEN)</span><input id="admin-token" type="password" autocomplete="off"></label>
+    <label class="field"><span>Token de admin</span><input id="admin-token" type="password" autocomplete="off" placeholder="Si el servidor define ADMIN_TOKEN"></label>
     <div class="center">
       <button id="btn-save-config" class="btn primary" type="button">Guardar ajustes</button>
     </div>
@@ -77,18 +74,9 @@
 </main>
 
 <nav class="bottom">
-  <a href="#/" data-nav="offers" class="active">
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    <span>Ofertas</span>
-  </a>
-  <a href="#/targets" data-nav="targets">
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-    <span>Objetivos</span>
-  </a>
-  <a href="#/config" data-nav="config">
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    <span>Ajustes</span>
-  </a>
+  <a href="#/" data-nav="offers" class="active">Ofertas</a>
+  <a href="#/targets" data-nav="targets">Objetivos</a>
+  <a href="#/config" data-nav="config">Ajustes</a>
 </nav>
 
 <script src="app.js" defer></script>

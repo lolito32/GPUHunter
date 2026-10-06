@@ -7,10 +7,10 @@ import { escapeHtml, sendQueue } from './telegram.js';
 function buildMessage(product, from, to, target) {
   const store = STORE_BY_KEY[product.store];
   const storeName = store ? store.name : product.store;
-  const source = product.source ? ` · vía ${escapeHtml(product.source)}` : '';
-  const before = from > to ? ` (bajó de ${formatARS(from)})` : '';
+  const source = product.source ? ` (vía ${escapeHtml(product.source)})` : '';
+  const before = from > to ? ` · bajo de ${formatARS(from)}` : '';
   return [
-    `🔻 <b>${escapeHtml(labelForKey(product.gpu))}</b> bajo objetivo${source}`,
+    `<b>${escapeHtml(labelForKey(product.gpu))}</b> bajo el objetivo${source}`,
     `Tienda: <b>${escapeHtml(storeName)}</b>`,
     `Precio: <b>${formatARS(to)}</b>${before}`,
     `Objetivo: ${formatARS(target)}`,

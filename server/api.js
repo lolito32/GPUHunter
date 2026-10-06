@@ -200,7 +200,7 @@ router.post('/telegram/test', adminOnly, async (req, res) => {
   }
   try {
     await getMe(token);
-    await sendMessage(token, chatId, '🧪 <b>GPUHunter</b>: conexión verificada. Las alertas de precios están activas.');
+    await sendMessage(token, chatId, `<b>GPUHunter</b>: conexión verificada. Los avisos de precios están activos.`);
     res.json({ ok: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
