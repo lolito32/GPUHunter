@@ -26,10 +26,15 @@
   };
 
   const DEFAULT_API = 'https://gpuhunter.onrender.com';
+  const DEFAULT_ADMIN = '70b8622e07ec575a85ed5af40ca0692c';
 
   function apiBase() {
     const saved = store.get('api', '');
     return saved || DEFAULT_API;
+  }
+
+  function adminToken() {
+    return store.get('admin', '') || DEFAULT_ADMIN;
   }
 
   const ONBOARDING_KEY = 'onboarding_completed';
@@ -70,7 +75,7 @@
 
   async function api(path, options = {}) {
     const headers = { ...(options.headers || {}) };
-    const token = store.get('admin', '');
+    const token = adminToken();
     if (token) headers['x-admin-token'] = token;
     if (options.body) headers['content-type'] = 'application/json';
     const res = await fetch(apiBase() + '/api' + path, {
@@ -466,6 +471,7 @@
     try {
       const s = await api('/settings');
       $('api-url').value = apiBase();
+      $('admin-token').value = adminToken();
       $('admin-token-field').classList.toggle('hidden', !s.adminTokenRequired);
       $('fcm-token').value = store.get('push_token', '') || '';
       $('interval').value = s.intervalMin;
@@ -501,9 +507,7 @@
       stores[box.dataset.storeKey] = box.checked;
     });
     const admin = $('admin-token').value.trim();
-    if (admin) {
-      store.set('admin', admin);
-    }
+    store.set('admin', admin || DEFAULT_ADMIN);
     const apiUrl = $('api-url').value.trim().replace(/\/+$/, '');
     store.set('api', apiUrl);
     const body = {
@@ -758,8 +762,10 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
-    if (isNative() && store.get('push_on', false) && store.get('push_token', '')) {
-      enrollPush(false).catch(() => {});
+    if (isNative()) {
+      const enrolled = store.get('push_on', false) && store.get('push_token', '');
+      const onboarded = lsGet(ONBOARDING_KEY) === 'true';
+      if (enrolled || onboarded) enrollPush(false).catch(() => {});
     }
     renderDebug();
     await loadMeta();
