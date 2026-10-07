@@ -130,19 +130,46 @@
         sound: 'default'
       });
     } catch {}
-    let token = store.get('push_token', '');
-    if (!token || force) {
-      if (force) {
-        const p = await push.requestPermissions();
-        if (p && p.receive === 'denied') return { activated: false, reason: 'denied' };
-      }
-      const t = await push.getToken();
-      token = t && t.value;
-      if (!token) return { activated: false, reason: 'no-token' };
-    }
+
     setupPushListeners(push);
-    await registerDeviceToken(token);
-    return { activated: true };
+
+    if (force) {
+      const permStatus = await push.requestPermissions();
+      if (permStatus && permStatus.receive === 'denied') return { activated: false, reason: 'denied' };
+    }
+
+    return new Promise(async (resolve) => {
+      let timeoutId = setTimeout(() => {
+        resolve({ activated: false, reason: 'no-token' });
+      }, 10000);
+
+      push.addListener('registration', async (tokenObj) => {
+        clearTimeout(timeoutId);
+        const token = tokenObj && tokenObj.value;
+        if (!token) {
+          resolve({ activated: false, reason: 'no-token' });
+          return;
+        }
+        try {
+          await registerDeviceToken(token);
+          resolve({ activated: true });
+        } catch (err) {
+          resolve({ activated: false, reason: err.message });
+        }
+      });
+
+      push.addListener('registrationError', (err) => {
+        clearTimeout(timeoutId);
+        resolve({ activated: false, reason: err && err.error ? err.error : 'registration-error' });
+      });
+
+      try {
+        await push.register();
+      } catch (err) {
+        clearTimeout(timeoutId);
+        resolve({ activated: false, reason: err.message });
+      }
+    });
   }
 
   function timeAgo(ts) {
@@ -549,7 +576,7 @@
         return;
       }
       msg.className = 'msg ok';
-      msg.textContent = 'Alertas activadas en este dispositivo.';
+      msg.textContent = 'Dispositivo registrado correctamente';
     } catch (e) {
       msg.className = 'msg err';
       msg.textContent = e.message || 'No se pudo activar las alertas';
