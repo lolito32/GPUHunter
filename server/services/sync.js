@@ -11,6 +11,7 @@ import {
 } from '../store.js';
 import { detectGpu, looksLikeVideoCard } from '../gpu.js';
 import { processDrops } from './monitor.js';
+import { evaluateRealDeals } from './scraper.js';
 
 let current = null;
 
@@ -81,6 +82,7 @@ async function execute(trigger) {
   }
 
   const alertResult = await processDrops(candidates).catch((err) => ({ sent: 0, reason: err.message }));
+  const realDealResult = await evaluateRealDeals().catch((err) => ({ sent: 0, error: err.message }));
 
   const lastRun = {
     trigger,
@@ -89,7 +91,7 @@ async function execute(trigger) {
     added: merged.added,
     changed: merged.changed,
     removed,
-    alerts: alertResult.sent || 0,
+    alerts: (alertResult.sent || 0) + (realDealResult.sent || 0),
     stores
   };
   const previousRuns = (getStatus().runs || []).filter((run) => run && run.at !== startedAt);
