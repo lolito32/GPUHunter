@@ -128,17 +128,30 @@ export function getDevices() {
   return data.devices || {};
 }
 
-export function registerDevice({ token, platform = 'android', model = '' }) {
+export function registerDevice({ token, platform = 'android', model = '', gpuModels = [], maxPrice = 0 }) {
   if (!token || typeof token !== 'string') return false;
   const clean = token.trim();
   if (clean.length < 20) return false;
   if (!data.devices) data.devices = {};
   const now = Date.now();
+  const existing = data.devices[clean] || {};
+  
+  const cleanGpuModels = Array.isArray(gpuModels) 
+    ? gpuModels.map(m => String(m).trim()).filter(Boolean)
+    : (existing.gpuModels || []);
+
+  const parsedMaxPrice = Number(maxPrice);
+  const cleanMaxPrice = Number.isFinite(parsedMaxPrice) && parsedMaxPrice > 0 
+    ? Math.round(parsedMaxPrice) 
+    : (existing.maxPrice || 0);
+
   data.devices[clean] = {
-    registeredAt: data.devices[clean]?.registeredAt || now,
+    registeredAt: existing.registeredAt || now,
     lastSeen: now,
-    platform: platform || 'android',
-    model: model || ''
+    platform: platform || existing.platform || 'android',
+    model: model || existing.model || '',
+    gpuModels: cleanGpuModels,
+    maxPrice: cleanMaxPrice
   };
   scheduleSave();
   return true;

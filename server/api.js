@@ -195,13 +195,35 @@ router.post('/register-device', (req, res) => {
   const ok = registerDevice({
     token: body.token,
     platform: body.platform,
-    model: body.model
+    model: body.model,
+    gpuModels: body.gpuModels,
+    maxPrice: body.maxPrice
   });
   if (!ok) {
     res.status(400).json({ error: 'token inválido' });
     return;
   }
   res.json({ ok: true, devices: Object.keys(getDevices()).length, fcm: isFcmConfigured() });
+});
+
+router.post('/user/preferences', (req, res) => {
+  const body = req.body || {};
+  const token = typeof body.token === 'string' ? body.token.trim() : '';
+  if (!token || token.length < 20) {
+    res.status(400).json({ error: 'token inválido o faltante' });
+    return;
+  }
+  const ok = registerDevice({
+    token,
+    gpuModels: body.gpuModels,
+    maxPrice: body.maxPrice
+  });
+  if (!ok) {
+    res.status(400).json({ error: 'no se pudieron actualizar las preferencias' });
+    return;
+  }
+  const device = getDevices()[token];
+  res.json({ ok: true, preferences: { gpuModels: device.gpuModels || [], maxPrice: device.maxPrice || 0 } });
 });
 
 router.post('/test-notification', adminOnly, (req, res) => {

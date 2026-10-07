@@ -71,7 +71,40 @@ export function isFcmConfigured() {
 }
 
 export async function sendPushToDevices(devices, payload) {
-  const tokens = Object.keys(devices || {});
+  const allDevices = devices || {};
+  const product = payload && payload.product ? payload.product : null;
+  const productPrice = Number(payload && payload.price !== undefined ? payload.price : (product?.price || 0));
+  const productGpuKey = String(payload?.data?.gpu || product?.gpu || '').trim();
+  const productNameNorm = String(product?.name || '').toLowerCase();
+
+  const tokens = Object.entries(allDevices)
+    .filter(([token, pref]) => {
+      if (!token || typeof token !== 'string') return false;
+      const p = pref || {};
+      const gpuModels = Array.isArray(p.gpuModels) ? p.gpuModels : [];
+      const maxPrice = Number(p.maxPrice || 0);
+
+      // Si el usuario configuró modelos de interés, verificar coincidencia (por key o por substring en el nombre)
+      if (gpuModels.length > 0) {
+        const matchesGpu = gpuModels.some((m) => {
+          const targetNorm = String(m).toLowerCase().trim();
+          if (!targetNorm) return false;
+          if (productGpuKey && targetNorm === String(productGpuKey).toLowerCase().trim()) return true;
+          if (productNameNorm && productNameNorm.includes(targetNorm)) return true;
+          return false;
+        });
+        if (!matchesGpu) return false;
+      }
+
+      // Si el usuario configuró un precio máximo, verificar que el precio actual no lo supere
+      if (maxPrice > 0 && productPrice > 0 && productPrice > maxPrice) {
+        return false;
+      }
+
+      return true;
+    })
+    .map(([token]) => token);
+
   if (!tokens.length) return { sent: 0, errors: 0 };
   if (!messaging) {
     console.log('[fcm] no enviado (no configurado):', payload.title);
