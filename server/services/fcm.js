@@ -95,6 +95,33 @@ export async function sendPushToDevices(devices, payload) {
   }
 }
 
+export async function sendPushToToken(token, payload) {
+  const clean = typeof token === 'string' ? token.trim() : '';
+  if (!clean) return { sent: 0, errors: 1, reason: 'token inválido' };
+  const app = await tryInit();
+  if (!app) {
+    console.log('[fcm] no enviado (no configurado):', payload.title);
+    return { sent: 0, errors: 1, reason: initError };
+  }
+  try {
+    const message = {
+      token: clean,
+      notification: { title: payload.title, body: payload.body },
+      android: { priority: 'high' }
+    };
+    if (payload.data) message.data = payload.data;
+    const id = await app.messaging().send(message);
+    return { sent: 1, errors: 0, id };
+  } catch (e) {
+    const code = e.errorInfo?.code || e.message || '';
+    console.error('[fcm] error send token:', code);
+    if (code.includes('registration-token-not-registered') || code.includes('invalid-argument')) {
+      unregisterSafe(clean);
+    }
+    return { sent: 0, errors: 1, reason: code };
+  }
+}
+
 function unregisterSafe(token) {
   import('../store.js')
     .then((m) => m.unregisterDevice(token))

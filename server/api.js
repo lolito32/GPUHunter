@@ -17,7 +17,7 @@ import {
 import { labelForKey } from './gpu.js';
 import { runSync, isSyncing } from './services/sync.js';
 import { registerDevice, unregisterDevice, getDevices } from './store.js';
-import { isFcmConfigured, sendPushToDevices } from './services/fcm.js';
+import { isFcmConfigured, sendPushToDevices, sendPushToToken } from './services/fcm.js';
 
 const router = express.Router();
 
@@ -202,6 +202,24 @@ router.post('/register-device', (req, res) => {
     return;
   }
   res.json({ ok: true, devices: Object.keys(getDevices()).length, fcm: isFcmConfigured() });
+});
+
+router.post('/test-notification', adminOnly, (req, res) => {
+  const body = req.body || {};
+  const token = typeof body.token === 'string' ? body.token.trim() : '';
+  if (!token) {
+    res.status(400).json({ success: false, message: 'Falta el token FCM' });
+    return;
+  }
+  res.json({ success: true, message: 'Notificación programada en 30s' });
+  setTimeout(() => {
+    sendPushToToken(token, {
+      title: 'Oferta de Prueba GPUHunter',
+      body: 'Si ves este mensaje, las notificaciones Push nativas en segundo plano funcionan correctamente.'
+    })
+      .then((r) => console.log('[api] test-notification:', JSON.stringify(r)))
+      .catch((e) => console.error('[api] test-notification error:', e.message));
+  }, 30000);
 });
 
 router.post('/sync', adminOnly, (req, res) => {

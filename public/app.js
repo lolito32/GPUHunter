@@ -728,20 +728,19 @@
 
   $('btn-test-push').addEventListener('click', async () => {
     const msg = $('test-msg');
+    const tokenGuardado = store.get('push_token', '') || '';
+    if (!tokenGuardado) {
+      msg.className = 'msg err';
+      msg.textContent = 'Sin token FCM en este dispositivo: activá las alertas desde Ajustes.';
+      return;
+    }
     msg.className = 'msg';
     msg.textContent = 'Programando notificación de prueba…';
     try {
-      const r = await api('/test-push', { method: 'POST', body: { delaySec: 30 } });
-      if (!r.devices) {
-        msg.className = 'msg err';
-        msg.textContent = 'No hay dispositivos registrados en el servidor.';
-      } else if (!r.fcm) {
-        msg.className = 'msg err';
-        msg.textContent = 'El servidor no tiene credenciales FCM configuradas.';
-      } else {
-        msg.className = 'msg ok';
-        msg.textContent = 'Programada: llega en ~30 s con la app minimizada o bloqueada.';
-      }
+      const r = await api('/test-notification', { method: 'POST', body: { token: tokenGuardado } });
+      msg.className = 'msg ok';
+      msg.textContent = r.message || 'Prueba programada.';
+      toast('Prueba programada. Puedes cerrar la app ahora.');
     } catch (err) {
       msg.className = 'msg err';
       msg.textContent = err.status === 401 ? 'Token de admin requerido (cargalo arriba).' : err.message;
