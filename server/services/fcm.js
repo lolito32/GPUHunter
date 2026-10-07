@@ -167,13 +167,22 @@ export async function sendPushToDevices(devices, rawPayload) {
       if (r.success) sent++;
       else {
         errors++;
-        const code = r.error?.code || '';
-        if (code.includes('registration-token-not-registered') || code.includes('invalid-argument')) {
+        const errObj = r.error || {};
+        const code = String(errObj.code || errObj.message || '');
+        if (
+          code.includes('messaging/invalid-registration-token') ||
+          code.includes('messaging/registration-token-not-registered') ||
+          code.includes('registration-token-not-registered') ||
+          code.includes('invalid-argument')
+        ) {
           invalid.push(tokens[i]);
         }
       }
     });
     for (const t of invalid) unregisterSafe(t);
+    if (invalid.length > 0) {
+      console.log(`[fcm] depurados ${invalid.length} tokens FCM caducados u obsoleto(s)`);
+    }
     return { sent, errors, invalid: invalid.length };
   } catch (e) {
     console.error('[fcm] error send:', e.message);
@@ -221,9 +230,16 @@ export async function sendPushToToken(token, rawPayload) {
     const id = await messaging.send(message);
     return { sent: 1, errors: 0, id };
   } catch (e) {
-    const code = e.errorInfo?.code || e.message || '';
+    const errObj = e.errorInfo || e;
+    const code = String(errObj.code || e.message || '');
     console.error('[fcm] error send token:', code);
-    if (code.includes('registration-token-not-registered') || code.includes('invalid-argument')) {
+    if (
+      code.includes('messaging/invalid-registration-token') ||
+      code.includes('messaging/registration-token-not-registered') ||
+      code.includes('registration-token-not-registered') ||
+      code.includes('invalid-argument')
+    ) {
+      console.log(`[fcm] depurado 1 token FCM caducado u obsoleto`);
       unregisterSafe(clean);
     }
     return { sent: 0, errors: 1, reason: code };
