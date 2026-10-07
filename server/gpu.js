@@ -56,9 +56,12 @@ export function looksLikeVideoCard(rawName) {
   return Boolean(name.match(NVIDIA) || name.match(AMD) || name.match(INTEL));
 }
 
+const LABEL_PREFIXES = ['RTX', 'GTX', 'GT', 'RX', 'ARC'];
+
 export function labelForKey(key) {
-  const [, brand, model, suffix] = String(key).split('-');
-  if (!brand || !model) return key.toUpperCase();
-  const base = brand.toUpperCase() + ' ' + model;
-  return suffix ? `${base} ${suffix.toUpperCase()}` : base;
+  const parts = String(key || '').split('-').filter(Boolean);
+  if (!parts.length) return '';
+  const idx = parts.findIndex((p) => LABEL_PREFIXES.includes(p.toUpperCase()));
+  if (idx < 0) return String(key).toUpperCase();
+  return parts.slice(idx).map((p) => p.toUpperCase()).join(' ');
 }
