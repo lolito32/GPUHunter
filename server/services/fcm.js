@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR } from '../config.js';
+import { unregisterDevice } from '../store.js';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 
@@ -160,30 +161,24 @@ export async function sendPushToDevices(devices, rawPayload) {
         }
       }
     });
+    const stale = new Set();
     let sent = 0;
     let errors = 0;
-    const invalid = [];
     res.responses.forEach((r, i) => {
-      if (r.success) sent++;
-      else {
-        errors++;
-        const errObj = r.error || {};
-        const code = String(errObj.code || errObj.message || '');
-        if (
-          code.includes('messaging/invalid-registration-token') ||
-          code.includes('messaging/registration-token-not-registered') ||
-          code.includes('registration-token-not-registered') ||
-          code.includes('invalid-argument')
-        ) {
-          invalid.push(tokens[i]);
-        }
+      if (r.success) {
+        sent++;
+        return;
       }
+      errors++;
+      if (isStaleTokenError(r.error)) stale.add(tokens[i]);
     });
-    for (const t of invalid) unregisterSafe(t);
-    if (invalid.length > 0) {
-      console.log(`[fcm] depurados ${invalid.length} tokens FCM caducados u obsoleto(s)`);
-    }
-    return { sent, errors, invalid: invalid.length };
+    const invalid = [...stale];
+    let purged = 0;
+    for (const t of invalid) if (unregisterSafe(t)) purged++;
+    console.log(
+      `[fcm] envío multicast: ${sent} enviados, ${errors} con error, ${purged} token(s) caducado(s) depurado(s)`
+    );
+    return { sent, errors, invalid: invalid.length, purged };
   } catch (e) {
     console.error('[fcm] error send:', e.message);
     return { sent: 0, errors: tokens.length, reason: e.message };
@@ -228,26 +223,43 @@ export async function sendPushToToken(token, rawPayload) {
       }
     };
     const id = await messaging.send(message);
+    console.log('[fcm] envío directo: 1 enviado, 0 token(s) caducado(s) depurado(s)');
     return { sent: 1, errors: 0, id };
   } catch (e) {
     const errObj = e.errorInfo || e;
-    const code = String(errObj.code || e.message || '');
+    const code = String(errObj.code || e.code || e.message || '');
     console.error('[fcm] error send token:', code);
-    if (
-      code.includes('messaging/invalid-registration-token') ||
-      code.includes('messaging/registration-token-not-registered') ||
-      code.includes('registration-token-not-registered') ||
-      code.includes('invalid-argument')
-    ) {
-      console.log(`[fcm] depurado 1 token FCM caducado u obsoleto`);
-      unregisterSafe(clean);
-    }
-    return { sent: 0, errors: 1, reason: code };
+    const purged = isStaleTokenError(errObj) && unregisterSafe(clean) ? 1 : 0;
+    console.log(`[fcm] envío directo: 0 enviados, 1 con error, ${purged} token(s) caducado(s) depurado(s)`);
+    return { sent: 0, errors: 1, purged, reason: code };
   }
 }
 
+const STALE_TOKEN_CODES = [
+  'messaging/invalid-registration-token',
+  'messaging/registration-token-not-registered',
+  'invalid-registration-token',
+  'registration-token-not-registered'
+];
+
+export function isStaleTokenError(err) {
+  const e = err || {};
+  const code = String(e.code || '');
+  const message = String(e.message || '');
+  if (STALE_TOKEN_CODES.some((c) => code.includes(c) || message.includes(c))) return true;
+  if (code.includes('invalid-argument')) {
+    return /registration[ -]token|device token|token/i.test(message) && !/payload|data|priority|notification/i.test(message);
+  }
+  return false;
+}
+
 function unregisterSafe(token) {
-  import('../store.js')
-    .then((m) => m.unregisterDevice(token))
-    .catch(() => {});
+  try {
+    const ok = unregisterDevice(token);
+    if (ok) console.log(`[fcm] token obsoleto removido de la base de datos: ${String(token).slice(0, 16)}...`);
+    return ok;
+  } catch (e) {
+    console.error('[fcm] no se pudo remover el token:', e.message);
+    return false;
+  }
 }
