@@ -108,6 +108,16 @@
   </a>
 </nav>
 
+<div id="product-modal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2 id="product-modal-title"></h2>
+      <button class="btn small" type="button" onclick="closeProductModal()">Cerrar</button>
+    </div>
+    <div class="modal-body" id="product-modal-body"></div>
+  </div>
+</div>
+
 <div id="onboarding" class="onboarding hidden" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
   <div class="onboarding-card">
     <span class="onboarding-mark">GPUHunter</span>
@@ -124,5 +134,7 @@
 </div>
 
 <script src="app.js?v=13" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<script src="product-modal.js?v=1" defer></script>
 </body>
 </html>
