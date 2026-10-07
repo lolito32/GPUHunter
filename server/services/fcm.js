@@ -1,47 +1,67 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR } from '../config.js';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
 
-let admin = null;
+let messaging = null;
 let initError = '';
 
-function tryInit() {
-  if (admin || initError) return admin;
-  const raw =
-    process.env.FIREBASE_SERVICE_ACCOUNT ||
-    (fs.existsSync(path.join(DATA_DIR, 'firebase-service-account.json'))
-      ? fs.readFileSync(path.join(DATA_DIR, 'firebase-service-account.json'), 'utf8')
-      : '');
-  if (!raw) {
-    initError = 'sin credenciales (FIREBASE_SERVICE_ACCOUNT vacío)';
-    console.warn('[fcm] no configurado:', initError);
+function parseCandidate(raw) {
+  if (!raw) return null;
+  const text = typeof raw === 'string' ? raw.trim() : '';
+  const attempts = text ? [text, Buffer.from(text, 'base64').toString('utf8')] : [];
+  let firstError = null;
+  for (const attempt of attempts) {
+    try {
+      const parsed = JSON.parse(attempt);
+      if (parsed && typeof parsed === 'object') return parsed;
+      if (!firstError) firstError = new Error('el JSON no es una cuenta de servicio');
+    } catch (e) {
+      if (!firstError) firstError = e;
+    }
+  }
+  throw firstError || new Error('credencial vacía');
+}
+
+function resolveServiceAccount() {
+  const file = path.join(DATA_DIR, 'firebase-service-account.json');
+  const sources = [
+    ['FIREBASE_SERVICE_ACCOUNT', process.env.FIREBASE_SERVICE_ACCOUNT],
+    [file, fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '']
+  ];
+  for (const [name, raw] of sources) {
+    if (!raw) continue;
+    try {
+      return parseCandidate(raw);
+    } catch (e) {
+      console.error('[FCM] Error al parsear ' + name + ':', e.message);
+    }
+  }
+  return null;
+}
+
+function initFirebase() {
+  const serviceAccount = resolveServiceAccount();
+  if (!serviceAccount) {
+    initError = 'sin credenciales válidas (FIREBASE_SERVICE_ACCOUNT vacío)';
+    console.warn('[FCM] No se encontraron credenciales válidas.');
     return null;
   }
-  return import('firebase-admin')
-    .then(({ default: fb }) => {
-      let cred;
-      try {
-        cred = fb.credential.cert(JSON.parse(raw));
-      } catch {
-        try {
-          cred = fb.credential.cert(JSON.parse(Buffer.from(raw, 'base64').toString('utf8')));
-        } catch (e2) {
-          initError = 'credenciales inválidas: ' + e2.message;
-          console.error('[fcm]', initError);
-          return null;
-        }
-      }
-      fb.initializeApp({ credential: cred });
-      admin = fb;
-      console.log('[fcm] firebase-admin inicializado');
-      return admin;
-    })
-    .catch((e) => {
-      initError = e.message;
-      console.error('[fcm] error al inicializar:', e.message);
-      return null;
-    });
+  try {
+    if (!getApps().length) {
+      initializeApp({ credential: cert(serviceAccount) });
+      console.log('[FCM] Firebase Admin inicializado exitosamente desde variable de entorno.');
+    }
+    return getMessaging();
+  } catch (e) {
+    initError = 'error al inicializar: ' + e.message;
+    console.error('[FCM] Error al inicializar firebase-admin:', e.message);
+    return null;
+  }
 }
+
+messaging = initFirebase();
 
 export function isFcmConfigured() {
   return Boolean(
@@ -53,13 +73,12 @@ export function isFcmConfigured() {
 export async function sendPushToDevices(devices, payload) {
   const tokens = Object.keys(devices || {});
   if (!tokens.length) return { sent: 0, errors: 0 };
-  const app = await tryInit();
-  if (!app) {
+  if (!messaging) {
     console.log('[fcm] no enviado (no configurado):', payload.title);
     return { sent: 0, errors: 1, reason: initError };
   }
   try {
-    const res = await app.messaging().sendEachForMulticast({
+    const res = await messaging.sendEachForMulticast({
       tokens,
       notification: { title: payload.title, body: payload.body },
       data: payload.data || {},
@@ -98,8 +117,7 @@ export async function sendPushToDevices(devices, payload) {
 export async function sendPushToToken(token, payload) {
   const clean = typeof token === 'string' ? token.trim() : '';
   if (!clean) return { sent: 0, errors: 1, reason: 'token inválido' };
-  const app = await tryInit();
-  if (!app) {
+  if (!messaging) {
     console.log('[fcm] no enviado (no configurado):', payload.title);
     return { sent: 0, errors: 1, reason: initError };
   }
@@ -110,7 +128,7 @@ export async function sendPushToToken(token, payload) {
       android: { priority: 'high' }
     };
     if (payload.data) message.data = payload.data;
-    const id = await app.messaging().send(message);
+    const id = await messaging.send(message);
     return { sent: 1, errors: 0, id };
   } catch (e) {
     const code = e.errorInfo?.code || e.message || '';
