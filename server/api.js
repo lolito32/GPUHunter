@@ -103,6 +103,11 @@ router.get('/meta', (_req, res) => {
   });
 });
 
+router.get('/offers', (req, res) => {
+  req.url = '/products';
+  router.handle(req, res);
+});
+
 router.get('/products', (req, res) => {
   const { gpu, store, q, deal } = req.query;
   const page = clamp(req.query.page, 1, 1, 10000);
