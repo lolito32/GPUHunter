@@ -202,6 +202,31 @@ export function isFcmConfigured() {
   );
 }
 
+const normGpu = (value) => String(value === undefined || value === null ? '' : value)
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '');
+
+export function matchesPreferences(pref, ctx) {
+  const p = pref || {};
+  const c = ctx || {};
+  const gpuModels = Array.isArray(p.gpuModels) ? p.gpuModels : [];
+  const maxPrice = Number(p.maxPrice || 0);
+
+  if (gpuModels.length > 0) {
+    const matches = gpuModels.some((model) => {
+      const wanted = normGpu(model);
+      if (!wanted) return false;
+      if (c.gpuKeyNorm && wanted === c.gpuKeyNorm) return true;
+      if (c.nameNorm && c.nameNorm.includes(wanted)) return true;
+      return false;
+    });
+    if (!matches) return false;
+  }
+
+  if (maxPrice > 0 && c.price > 0 && c.price > maxPrice) return false;
+  return true;
+}
+
 export async function sendPushToDevices(devices, rawPayload) {
   const payload = formatPayload(rawPayload);
   const allDevices = devices || {};
@@ -209,36 +234,27 @@ export async function sendPushToDevices(devices, rawPayload) {
   const productPrice = toPositiveNumber(
     (rawPayload && rawPayload.price) || product?.price || payload.data?.price
   );
-  const productGpuKey = String(payload.data?.gpu || product?.gpu || '').trim();
-  const productNameNorm = String(product?.name || '').toLowerCase();
+  const prefCtx = {
+    gpuKeyNorm: normGpu(payload.data?.gpu || product?.gpu),
+    nameNorm: normGpu(product?.name || payload.data?.name),
+    price: productPrice
+  };
 
-  const tokens = Object.entries(allDevices)
-    .filter(([token, pref]) => {
-      if (!token || typeof token !== 'string') return false;
-      const p = pref || {};
-      const gpuModels = Array.isArray(p.gpuModels) ? p.gpuModels : [];
-      const maxPrice = Number(p.maxPrice || 0);
+  let registered = 0;
+  const tokens = [];
+  for (const [token, pref] of Object.entries(allDevices)) {
+    if (!token || typeof token !== 'string') continue;
+    registered++;
+    if (matchesPreferences(pref, prefCtx)) tokens.push(token);
+  }
+  const skipped = registered - tokens.length;
+  if (skipped > 0) {
+    console.log(
+      `[fcm] preferencias: ${tokens.length}/${registered} dispositivo(s) coinciden con la oferta${productPrice ? ' (' + formatARS(productPrice) + ')' : ''}`
+    );
+  }
 
-      if (gpuModels.length > 0) {
-        const matchesGpu = gpuModels.some((m) => {
-          const targetNorm = String(m).toLowerCase().trim();
-          if (!targetNorm) return false;
-          if (productGpuKey && targetNorm === String(productGpuKey).toLowerCase().trim()) return true;
-          if (productNameNorm && productNameNorm.includes(targetNorm)) return true;
-          return false;
-        });
-        if (!matchesGpu) return false;
-      }
-
-      if (maxPrice > 0 && productPrice > 0 && productPrice > maxPrice) {
-        return false;
-      }
-
-      return true;
-    })
-    .map(([token]) => token);
-
-  if (!tokens.length) return { sent: 0, errors: 0 };
+  if (!tokens.length) return { sent: 0, errors: 0, matched: 0, skipped: registered };
   if (!messaging) {
     console.log('[fcm] no enviado (no configurado):', payload.title);
     return { sent: 0, errors: 1, reason: initError };
@@ -265,7 +281,7 @@ export async function sendPushToDevices(devices, rawPayload) {
     console.log(
       `[fcm] envío multicast: ${sent} enviados, ${errors} con error, ${purged} token(s) caducado(s) depurado(s)`
     );
-    return { sent, errors, invalid: invalid.length, purged };
+    return { sent, errors, invalid: invalid.length, purged, matched: tokens.length, skipped };
   } catch (e) {
     console.error('[fcm] error send:', e.message);
     return { sent: 0, errors: tokens.length, reason: e.message };

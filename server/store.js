@@ -128,22 +128,36 @@ export function getDevices() {
   return data.devices || {};
 }
 
-export function registerDevice({ token, platform = 'android', model = '', gpuModels = [], maxPrice = 0 }) {
+const MAX_GPU_MODELS = 30;
+
+export function registerDevice({ token, platform, model, gpuModels, maxPrice }) {
   if (!token || typeof token !== 'string') return false;
   const clean = token.trim();
   if (clean.length < 20) return false;
   if (!data.devices) data.devices = {};
   const now = Date.now();
   const existing = data.devices[clean] || {};
-  
-  const cleanGpuModels = Array.isArray(gpuModels) 
-    ? gpuModels.map(m => String(m).trim()).filter(Boolean)
-    : (existing.gpuModels || []);
 
-  const parsedMaxPrice = Number(maxPrice);
-  const cleanMaxPrice = Number.isFinite(parsedMaxPrice) && parsedMaxPrice > 0 
-    ? Math.round(parsedMaxPrice) 
-    : (existing.maxPrice || 0);
+  let cleanGpuModels = Array.isArray(existing.gpuModels) ? existing.gpuModels : [];
+  if (Array.isArray(gpuModels)) {
+    const seen = new Set();
+    cleanGpuModels = [];
+    for (const raw of gpuModels) {
+      const value = String(raw ?? '').replace(/\s+/g, ' ').trim();
+      if (!value) continue;
+      const key = value.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      cleanGpuModels.push(value);
+      if (cleanGpuModels.length >= MAX_GPU_MODELS) break;
+    }
+  }
+
+  let cleanMaxPrice = Number(existing.maxPrice) > 0 ? Math.round(Number(existing.maxPrice)) : 0;
+  if (maxPrice !== undefined && maxPrice !== null && maxPrice !== '') {
+    const parsed = Number(maxPrice);
+    if (Number.isFinite(parsed) && parsed >= 0) cleanMaxPrice = Math.round(parsed);
+  }
 
   data.devices[clean] = {
     registeredAt: existing.registeredAt || now,

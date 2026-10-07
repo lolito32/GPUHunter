@@ -206,12 +206,36 @@ router.post('/register-device', (req, res) => {
   res.json({ ok: true, devices: Object.keys(getDevices()).length, fcm: isFcmConfigured() });
 });
 
+const MAX_PREF_GPU_MODELS = 30;
+const MAX_PREF_PRICE = 100000000;
+
 router.post('/user/preferences', (req, res) => {
   const body = req.body || {};
   const token = typeof body.token === 'string' ? body.token.trim() : '';
   if (!token || token.length < 20) {
     res.status(400).json({ error: 'token inválido o faltante' });
     return;
+  }
+  if (body.gpuModels !== undefined && body.gpuModels !== null) {
+    if (!Array.isArray(body.gpuModels)) {
+      res.status(400).json({ error: 'gpuModels debe ser una lista de modelos' });
+      return;
+    }
+    if (body.gpuModels.some((m) => typeof m !== 'string')) {
+      res.status(400).json({ error: 'gpuModels debe contener solo texto' });
+      return;
+    }
+    if (body.gpuModels.length > MAX_PREF_GPU_MODELS) {
+      res.status(400).json({ error: `gpuModels admite hasta ${MAX_PREF_GPU_MODELS} modelos` });
+      return;
+    }
+  }
+  if (body.maxPrice !== undefined && body.maxPrice !== null && body.maxPrice !== '') {
+    const parsed = Number(body.maxPrice);
+    if (!Number.isFinite(parsed) || parsed < 0 || parsed > MAX_PREF_PRICE) {
+      res.status(400).json({ error: 'maxPrice debe ser un importe en ARS entre 0 y ' + MAX_PREF_PRICE });
+      return;
+    }
   }
   const ok = registerDevice({
     token,
