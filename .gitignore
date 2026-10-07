@@ -4,3 +4,7 @@ data/*.tmp
 .env
 *.log
 .DS_Store
+.context/
+CLAUDE.md
+
+.aider*
