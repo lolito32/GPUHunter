@@ -7,6 +7,28 @@ import { getMessaging } from 'firebase-admin/messaging';
 let messaging = null;
 let initError = '';
 
+function formatPayload(payload) {
+  const p = payload || {};
+  const title = String(p.title || 'GPUHunter · Nueva oferta').trim();
+  const body = String(p.body || '').trim();
+  const imageUrl = String(p.imageUrl || p.image || '').trim();
+  const url = String(p.url || p?.data?.url || '/').trim();
+
+  const data = {
+    url,
+    ...(p.data && typeof p.data === 'object' ? p.data : {})
+  };
+  if (url && !data.url) data.url = url;
+
+  return {
+    title,
+    body,
+    imageUrl: imageUrl || undefined,
+    url,
+    data
+  };
+}
+
 function parseCandidate(raw) {
   if (!raw) return null;
   const text = typeof raw === 'string' ? raw.trim() : '';
@@ -70,11 +92,12 @@ export function isFcmConfigured() {
   );
 }
 
-export async function sendPushToDevices(devices, payload) {
+export async function sendPushToDevices(devices, rawPayload) {
+  const payload = formatPayload(rawPayload);
   const allDevices = devices || {};
-  const product = payload && payload.product ? payload.product : null;
-  const productPrice = Number(payload && payload.price !== undefined ? payload.price : (product?.price || 0));
-  const productGpuKey = String(payload?.data?.gpu || product?.gpu || '').trim();
+  const product = rawPayload && rawPayload.product ? rawPayload.product : null;
+  const productPrice = Number(rawPayload && rawPayload.price !== undefined ? rawPayload.price : (product?.price || 0));
+  const productGpuKey = String(payload.data?.gpu || product?.gpu || '').trim();
   const productNameNorm = String(product?.name || '').toLowerCase();
 
   const tokens = Object.entries(allDevices)
@@ -84,7 +107,6 @@ export async function sendPushToDevices(devices, payload) {
       const gpuModels = Array.isArray(p.gpuModels) ? p.gpuModels : [];
       const maxPrice = Number(p.maxPrice || 0);
 
-      // Si el usuario configuró modelos de interés, verificar coincidencia (por key o por substring en el nombre)
       if (gpuModels.length > 0) {
         const matchesGpu = gpuModels.some((m) => {
           const targetNorm = String(m).toLowerCase().trim();
@@ -96,7 +118,6 @@ export async function sendPushToDevices(devices, payload) {
         if (!matchesGpu) return false;
       }
 
-      // Si el usuario configuró un precio máximo, verificar que el precio actual no lo supere
       if (maxPrice > 0 && productPrice > 0 && productPrice > maxPrice) {
         return false;
       }
@@ -111,20 +132,33 @@ export async function sendPushToDevices(devices, payload) {
     return { sent: 0, errors: 1, reason: initError };
   }
   try {
+    const androidNotification = {
+      channelId: 'gpuhunter-alerts',
+      sound: 'default',
+      clickAction: 'OPEN_URL'
+    };
+    if (payload.imageUrl) {
+      androidNotification.imageUrl = payload.imageUrl;
+    }
+
     const res = await messaging.sendEachForMulticast({
       tokens,
-      notification: { title: payload.title, body: payload.body },
-      data: payload.data || {},
+      notification: {
+        title: payload.title,
+        body: payload.body,
+        imageUrl: payload.imageUrl || undefined
+      },
+      data: payload.data,
       android: {
         priority: 'high',
-        notification: {
-          channelId: 'gpuhunter-alerts',
-          sound: 'default',
-          clickAction: 'OPEN_URL',
-          imageUrl: payload.image || undefined
-        }
+        notification: androidNotification
       },
-      webpush: { fcmOptions: { link: payload.url || '/' } }
+      webpush: {
+        fcmOptions: { link: payload.url || '/' },
+        notification: {
+          image: payload.imageUrl || undefined
+        }
+      }
     });
     let sent = 0;
     let errors = 0;
@@ -147,7 +181,8 @@ export async function sendPushToDevices(devices, payload) {
   }
 }
 
-export async function sendPushToToken(token, payload) {
+export async function sendPushToToken(token, rawPayload) {
+  const payload = formatPayload(rawPayload);
   const clean = typeof token === 'string' ? token.trim() : '';
   if (!clean) return { sent: 0, errors: 1, reason: 'token inválido' };
   if (!messaging) {
@@ -155,12 +190,34 @@ export async function sendPushToToken(token, payload) {
     return { sent: 0, errors: 1, reason: initError };
   }
   try {
+    const androidNotification = {
+      channelId: 'gpuhunter-alerts',
+      sound: 'default',
+      clickAction: 'OPEN_URL'
+    };
+    if (payload.imageUrl) {
+      androidNotification.imageUrl = payload.imageUrl;
+    }
+
     const message = {
       token: clean,
-      notification: { title: payload.title, body: payload.body },
-      android: { priority: 'high' }
+      notification: {
+        title: payload.title,
+        body: payload.body,
+        imageUrl: payload.imageUrl || undefined
+      },
+      data: payload.data,
+      android: {
+        priority: 'high',
+        notification: androidNotification
+      },
+      webpush: {
+        fcmOptions: { link: payload.url || '/' },
+        notification: {
+          image: payload.imageUrl || undefined
+        }
+      }
     };
-    if (payload.data) message.data = payload.data;
     const id = await messaging.send(message);
     return { sent: 1, errors: 0, id };
   } catch (e) {
