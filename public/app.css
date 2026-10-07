@@ -599,6 +599,54 @@ h2 {
 .onboarding .btn.primary { min-height: 46px; }
 .onboarding .msg { text-align: center; }
 
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 10px);
+  z-index: 50;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  opacity: 0;
+  pointer-events: none;
+  max-width: calc(100% - 32px);
+  text-align: center;
+  transition: transform .2s ease, opacity .2s ease;
+}
+
+.toast.on {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+
+.test-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.fcm-status {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 11px;
+  font-size: 12.5px;
+  font-family: var(--font);
+  line-height: 1.55;
+  resize: none;
+}
+
+.fcm-status:focus { outline: none; border-color: #45474c; }
+
 @media (min-width: 720px) {
   .view { padding-top: 24px; }
 }

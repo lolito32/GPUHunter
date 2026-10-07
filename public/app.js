@@ -66,6 +66,8 @@
 
   let pollTimer = null;
 
+  let debugUnlocked = store.get('debug', false);
+
   async function api(path, options = {}) {
     const headers = { ...(options.headers || {}) };
     const token = store.get('admin', '');
@@ -465,6 +467,7 @@
       const s = await api('/settings');
       $('api-url').value = apiBase();
       $('admin-token-field').classList.toggle('hidden', !s.adminTokenRequired);
+      $('fcm-token').value = store.get('push_token', '') || '';
       $('interval').value = s.intervalMin;
       $('maxpages').value = s.maxPages;
       renderStoresFromSettings(s.stores, store.get('stores', null));
@@ -638,6 +641,7 @@
       }
       msg.className = 'msg ok';
       msg.textContent = 'Dispositivo registrado correctamente';
+      refreshFcmStatus();
     } catch (e) {
       msg.className = 'msg err';
       msg.textContent = e.message || 'No se pudo activar las alertas';
@@ -647,6 +651,109 @@
 
   $('btn-onboarding-start').addEventListener('click', startOnboarding);
 
+  function renderDebug() {
+    const el = $('debug-section');
+    if (!el) return;
+    el.classList.toggle('hidden', !debugUnlocked);
+    if (debugUnlocked) refreshFcmStatus();
+  }
+
+  function toast(text) {
+    let el = document.getElementById('toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'toast';
+      el.className = 'toast';
+      el.setAttribute('role', 'status');
+      document.body.appendChild(el);
+    }
+    el.textContent = text;
+    el.classList.add('on');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.remove('on'), 2400);
+  }
+
+  let wordTaps = 0;
+  let wordTapTimer = null;
+
+  $('wordmark').addEventListener('click', () => {
+    wordTaps++;
+    clearTimeout(wordTapTimer);
+    wordTapTimer = setTimeout(() => {
+      wordTaps = 0;
+    }, 1600);
+    if (wordTaps < 5) return;
+    wordTaps = 0;
+    clearTimeout(wordTapTimer);
+    debugUnlocked = !debugUnlocked;
+    store.set('debug', debugUnlocked);
+    renderDebug();
+    toast(debugUnlocked ? 'Modo Debug activado' : 'Modo Debug desactivado');
+  });
+
+  async function refreshFcmStatus() {
+    const el = $('fcm-status');
+    if (!el) return;
+    const token = store.get('push_token', '') || '';
+    const push = getPush();
+    let channel = 'gpuhunter-alerts: no disponible (solo app Android)';
+    if (push) {
+      try {
+        await push.createChannel({
+          id: 'gpuhunter-alerts',
+          name: 'Alertas GPUHunter',
+          description: 'Ofertas por debajo de tu objetivo',
+          importance: 5,
+          vibration: true,
+          sound: 'default'
+        });
+        channel = 'gpuhunter-alerts: activo';
+      } catch (err) {
+        channel = 'gpuhunter-alerts: error (' + ((err && err.message) || String(err)) + ')';
+      }
+    }
+    el.value = [
+      'Token: ' + (token || 'sin registro'),
+      'Canal: ' + channel,
+      'Alertas: ' + (store.get('push_on', false) ? 'activadas en este dispositivo' : 'sin activar'),
+      'Entorno: ' + (isNative() ? 'app Android' : 'navegador / PWA')
+    ].join('\n');
+  }
+
+  $('btn-fcm-refresh').addEventListener('click', refreshFcmStatus);
+
+  $('btn-test-push').addEventListener('click', async () => {
+    const msg = $('test-msg');
+    msg.className = 'msg';
+    msg.textContent = 'Programando notificación de prueba…';
+    try {
+      const r = await api('/test-push', { method: 'POST', body: { delaySec: 30 } });
+      if (!r.devices) {
+        msg.className = 'msg err';
+        msg.textContent = 'No hay dispositivos registrados en el servidor.';
+      } else if (!r.fcm) {
+        msg.className = 'msg err';
+        msg.textContent = 'El servidor no tiene credenciales FCM configuradas.';
+      } else {
+        msg.className = 'msg ok';
+        msg.textContent = 'Programada: llega en ~30 s con la app minimizada o bloqueada.';
+      }
+    } catch (err) {
+      msg.className = 'msg err';
+      msg.textContent = err.status === 401 ? 'Token de admin requerido (cargalo arriba).' : err.message;
+    }
+  });
+
+  $('btn-sim-drop').addEventListener('click', () => {
+    showPushBanner({
+      title: 'GPUHunter',
+      body: 'Simulación: RTX 4060 bajó $45.000 y quedó en $389.999 (bajo objetivo)'
+    });
+    const msg = $('test-msg');
+    msg.className = 'msg ok';
+    msg.textContent = 'Banner local disparado en foreground.';
+  });
+
   async function boot() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -654,6 +761,7 @@
     if (isNative() && store.get('push_on', false) && store.get('push_token', '')) {
       enrollPush(false).catch(() => {});
     }
+    renderDebug();
     await loadMeta();
     route();
     if (state.items.length === 0) load(1);

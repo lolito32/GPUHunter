@@ -17,7 +17,7 @@ import {
 import { labelForKey } from './gpu.js';
 import { runSync, isSyncing } from './services/sync.js';
 import { registerDevice, unregisterDevice, getDevices } from './store.js';
-import { isFcmConfigured } from './services/fcm.js';
+import { isFcmConfigured, sendPushToDevices } from './services/fcm.js';
 
 const router = express.Router();
 
@@ -211,6 +211,27 @@ router.post('/sync', adminOnly, (req, res) => {
   }
   runSync('manual').catch((err) => console.error('[sync] error:', err.message));
   res.status(202).json({ queued: true });
+});
+
+router.post('/test-push', adminOnly, (req, res) => {
+  const body = req.body || {};
+  const raw = Number(body.delaySec);
+  const delaySec = Number.isFinite(raw) ? Math.min(Math.max(Math.round(raw), 0), 300) : 30;
+  const devices = getDevices();
+  const count = Object.keys(devices).length;
+  const fcm = isFcmConfigured();
+  res.json({ ok: true, delaySec, devices: count, fcm });
+  if (!count || !fcm) return;
+  setTimeout(() => {
+    sendPushToDevices(getDevices(), {
+      title: 'GPUHunter · notificación de prueba',
+      body: 'Push de prueba desde el panel Debug (' + new Date().toLocaleTimeString('es-AR') + ')',
+      url: '/',
+      data: { url: '/', test: '1' }
+    })
+      .then((r) => console.log('[api] test-push:', JSON.stringify(r)))
+      .catch((e) => console.error('[api] test-push error:', e.message));
+  }, delaySec * 1000);
 });
 
 function publicSettings() {
