@@ -18,6 +18,7 @@ import { labelForKey } from './gpu.js';
 import { runSync, isSyncing } from './services/sync.js';
 import { registerDevice, unregisterDevice, getDevices } from './store.js';
 import { isFcmConfigured, sendPushToDevices, sendPushToToken } from './services/fcm.js';
+import { db, initDb } from './db.js';
 
 const router = express.Router();
 
@@ -301,6 +302,49 @@ router.post('/test-push', adminOnly, (req, res) => {
       .then((r) => console.log('[api] test-push:', JSON.stringify(r)))
       .catch((e) => console.error('[api] test-push error:', e.message));
   }, delaySec * 1000);
+});
+
+router.get('/products/:id/history', async (req, res) => {
+  const id = req.params.id;
+  try {
+    await initDb().catch(() => {});
+    const rows = await db('price_history')
+      .select('id', 'product_id', 'price', 'recorded_at')
+      .where('product_id', id)
+      .orderBy('recorded_at', 'asc')
+      .orderBy('id', 'asc');
+    res.json(rows.map((r) => ({
+      id: r.id,
+      product_id: r.product_id,
+      price: Number(r.price),
+      recorded_at: r.recorded_at instanceof Date ? r.recorded_at.toISOString() : r.recorded_at
+    })));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/products/:id/stats', async (req, res) => {
+  const id = req.params.id;
+  try {
+    await initDb().catch(() => {});
+    const rows = await db('price_history')
+      .select('price')
+      .where('product_id', id);
+    if (!rows || rows.length === 0) {
+      return res.json({ min: 0, max: 0, avg: 0, count: 0 });
+    }
+    const prices = rows.map((r) => Number(r.price)).filter((p) => Number.isFinite(p));
+    if (prices.length === 0) {
+      return res.json({ min: 0, max: 0, avg: 0, count: 0 });
+    }
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+    res.json({ min, max, avg: Math.round(avg * 100) / 100, count: prices.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 function publicSettings() {

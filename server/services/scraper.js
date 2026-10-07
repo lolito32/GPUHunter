@@ -3,6 +3,7 @@ import { sendPushToDevices } from './fcm.js';
 import { STORE_BY_KEY } from '../config.js';
 import { labelForKey } from '../gpu.js';
 import { formatARS } from '../lib/price.js';
+import { db, initDb } from '../db.js';
 
 function buildRealDealTitle(product) {
   return `¡Oferta real en ${labelForKey(product.gpu)}!`;
@@ -23,6 +24,12 @@ export async function evaluateRealDeals() {
   let evaluated = 0;
   let dealsCount = 0;
   const realDeals = [];
+
+  try {
+    await initDb().catch(() => {});
+  } catch (e) {
+    // ignore db init errors
+  }
 
   for (const product of Object.values(products)) {
     evaluated++;
@@ -62,6 +69,49 @@ export async function evaluateRealDeals() {
           }
         }
       });
+    }
+  }
+
+  for (const product of Object.values(products)) {
+    try {
+      const now = Date.now();
+      const pid = product.id || String(product.url || (product.store + '_' + product.gpu + '_' + product.name)).substring(0, 200);
+      await db('products')
+        .insert({
+          id: pid,
+          model_name: product.name,
+          store: product.store,
+          product_url: product.url,
+          image_url: product.image || '',
+          created_at: new Date(now),
+          updated_at: new Date(now)
+        })
+        .onConflict('id')
+        .merge({
+          model_name: product.name,
+          store: product.store,
+          product_url: product.url,
+          image_url: product.image || '',
+          updated_at: new Date(now)
+        });
+
+      const lastPriceRow = await db('price_history')
+        .select('price')
+        .where('product_id', pid)
+        .orderBy('recorded_at', 'desc')
+        .orderBy('id', 'desc')
+        .first();
+
+      const lastPrice = lastPriceRow ? Number(lastPriceRow.price) : null;
+      if (lastPrice === null || lastPrice !== Number(product.price)) {
+        await db('price_history').insert({
+          product_id: pid,
+          price: product.price,
+          recorded_at: new Date(now)
+        });
+      }
+    } catch (e) {
+      // ignore db errors
     }
   }
 
