@@ -37,16 +37,16 @@ export async function evaluateRealDeals() {
   }
     evaluated++;
     const history = product.history || [];
-    if (history.length < 3) { evaluated++; continue; } // necesitamos suficiente historial para un promedio confiable
+    if (history.length < 3) continue; // necesitamos suficiente historial para un promedio confiable
 
     const prices = history.map((h) => h.p).filter((p) => typeof p === 'number' && p > 0);
-    if (prices.length < 3) { evaluated++; continue; }
+    if (prices.length < 3) continue;
 
     const sum = prices.reduce((acc, p) => acc + p, 0);
     const avgPrice = sum / prices.length;
     const currentPrice = product.price;
 
-    if (!currentPrice || currentPrice >= avgPrice) { evaluated++; continue; }
+    if (!currentPrice || currentPrice >= avgPrice) continue;
 
     const diff = avgPrice - currentPrice;
     const discountPct = Math.round((diff / avgPrice) * 100);
