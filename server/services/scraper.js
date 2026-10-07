@@ -34,7 +34,6 @@ export async function evaluateRealDeals() {
         await db.insertPriceHistory({ product_id: pid, price: product.price, recorded_at: new Date(now) });
       }
     } catch (e) {}
-  }
     evaluated++;
     const history = product.history || [];
     if (history.length < 3) continue; // necesitamos suficiente historial para un promedio confiable
