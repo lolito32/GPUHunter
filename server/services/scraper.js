@@ -25,25 +25,28 @@ export async function evaluateRealDeals() {
   let dealsCount = 0;
   const realDeals = [];
 
-  try {
-    await initDb().catch(() => {});
-  } catch (e) {
-    // ignore db init errors
+    try {
+      const now = Date.now();
+      const pid = product.id || String(product.url || (product.store + '_' + product.gpu + '_' + product.name)).substring(0, 200);
+      await db.upsertProduct({ id: pid, model_name: product.name, store: product.store, product_url: product.url, image_url: product.image || '', created_at: new Date(now), updated_at: new Date(now) });
+      const lastPrice = await db.getLastPrice(pid);
+      if (lastPrice === null || lastPrice !== Number(product.price)) {
+        await db.insertPriceHistory({ product_id: pid, price: product.price, recorded_at: new Date(now) });
+      }
+    } catch (e) {}
   }
-
-  for (const product of Object.values(products)) {
     evaluated++;
     const history = product.history || [];
-    if (history.length < 3) continue; // necesitamos suficiente historial para un promedio confiable
+    if (history.length < 3) { evaluated++; continue; } // necesitamos suficiente historial para un promedio confiable
 
     const prices = history.map((h) => h.p).filter((p) => typeof p === 'number' && p > 0);
-    if (prices.length < 3) continue;
+    if (prices.length < 3) { evaluated++; continue; }
 
     const sum = prices.reduce((acc, p) => acc + p, 0);
     const avgPrice = sum / prices.length;
     const currentPrice = product.price;
 
-    if (!currentPrice || currentPrice >= avgPrice) continue;
+    if (!currentPrice || currentPrice >= avgPrice) { evaluated++; continue; }
 
     const diff = avgPrice - currentPrice;
     const discountPct = Math.round((diff / avgPrice) * 100);
