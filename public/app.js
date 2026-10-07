@@ -25,6 +25,29 @@
     }
   };
 
+  const DEFAULT_API = 'https://gpuhunter.onrender.com';
+
+  function apiBase() {
+    const saved = store.get('api', '');
+    return saved || DEFAULT_API;
+  }
+
+  const ONBOARDING_KEY = 'onboarding_completed';
+
+  function lsGet(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  function lsSet(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch {}
+  }
+
   const state = {
     meta: null,
     gpu: store.get('gpu', ''),
@@ -48,7 +71,7 @@
     const token = store.get('admin', '');
     if (token) headers['x-admin-token'] = token;
     if (options.body) headers['content-type'] = 'application/json';
-    const res = await fetch((store.get('api', '') || '') + '/api' + path, {
+    const res = await fetch(apiBase() + '/api' + path, {
       method: options.method || 'GET',
       headers,
       body: options.body ? JSON.stringify(options.body) : undefined
@@ -170,6 +193,48 @@
         resolve({ activated: false, reason: err.message });
       }
     });
+  }
+
+  function maybeShowOnboarding() {
+    if (lsGet(ONBOARDING_KEY) !== null) return false;
+    const el = $('onboarding');
+    if (!el) return false;
+    el.classList.remove('hidden');
+    return true;
+  }
+
+  function finishOnboarding() {
+    lsSet(ONBOARDING_KEY, 'true');
+    const el = $('onboarding');
+    if (el) el.classList.add('hidden');
+    if ((location.hash || '#/') === '#/') route();
+    else location.hash = '#/';
+  }
+
+  async function startOnboarding() {
+    const btn = $('btn-onboarding-start');
+    const msg = $('onboarding-msg');
+    btn.disabled = true;
+    msg.className = 'msg';
+    msg.textContent = 'Activando notificaciones…';
+    try {
+      const r = await enrollPush(true);
+      if (r.activated) {
+        msg.className = 'msg ok';
+        msg.textContent = 'Dispositivo registrado.';
+      } else if (r.reason === 'no-native') {
+        msg.className = 'msg';
+        msg.textContent = 'Las alertas push están disponibles en la app Android.';
+      } else {
+        msg.className = 'msg err';
+        msg.textContent = 'No se pudieron activar las alertas. Podés reintentarlo desde Ajustes.';
+      }
+    } catch (err) {
+      msg.className = 'msg err';
+      msg.textContent = (err && err.message) || 'No se pudieron activar las alertas.';
+    }
+    await new Promise((r) => setTimeout(r, 500));
+    finishOnboarding();
   }
 
   function timeAgo(ts) {
@@ -398,7 +463,8 @@
   async function loadConfig() {
     try {
       const s = await api('/settings');
-      $('api-url').value = store.get('api', '');
+      $('api-url').value = apiBase();
+      $('admin-token-field').classList.toggle('hidden', !s.adminTokenRequired);
       $('interval').value = s.intervalMin;
       $('maxpages').value = s.maxPages;
       renderStoresFromSettings(s.stores, store.get('stores', null));
@@ -563,11 +629,6 @@
     msg.className = 'msg';
     msg.textContent = 'Activando alertas…';
     try {
-      if (!store.get('api', '')) {
-        msg.className = 'msg err';
-        msg.textContent = 'Completá primero la URL del servidor (arriba) y toca Guardar ajustes.';
-        return;
-      }
       const r = await enrollPush(true);
       if (!r.activated) {
         msg.className = 'msg err';
@@ -584,16 +645,13 @@
   });
   window.addEventListener('hashchange', route);
 
+  $('btn-onboarding-start').addEventListener('click', startOnboarding);
+
   async function boot() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
-    if (
-      isNative() &&
-      store.get('push_on', false) &&
-      store.get('push_token', '') &&
-      store.get('api', '')
-    ) {
+    if (isNative() && store.get('push_on', false) && store.get('push_token', '')) {
       enrollPush(false).catch(() => {});
     }
     await loadMeta();
@@ -605,5 +663,6 @@
     }, 60000);
   }
 
+  maybeShowOnboarding();
   boot();
 })();

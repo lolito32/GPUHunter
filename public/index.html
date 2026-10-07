@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="app.css?v=7">
+<link rel="stylesheet" href="app.css?v=8">
 </head>
 <body>
 <header class="top">
@@ -52,7 +52,8 @@
   <section id="view-config" class="panel hidden">
     <h2>Notificaciones</h2>
     <p class="hint">La app Android te avisa por notificación push cuando una placa baja de tu objetivo.</p>
-    <label class="field"><span>URL del servidor</span><input id="api-url" type="url" inputmode="url" autocomplete="off" placeholder="https://tu-app.onrender.com"></label>
+    <label class="field"><span>URL del servidor</span><input id="api-url" type="url" inputmode="url" autocomplete="off" placeholder="https://gpuhunter.onrender.com"></label>
+    <p class="hint">Preconfigurada con la instancia oficial: no hace falta cargarla. Solo cambiala si corrés tu propia instancia.</p>
     <div class="row">
       <button id="btn-enable-push" class="btn primary" type="button">Activar alertas en este dispositivo</button>
     </div>
@@ -64,7 +65,7 @@
     <h2>Sincronización</h2>
     <label class="field"><span>Cada cuántos minutos</span><input id="interval" type="number" min="5" max="120" inputmode="numeric"></label>
     <label class="field"><span>Páginas por tienda</span><input id="maxpages" type="number" min="1" max="8" inputmode="numeric"></label>
-    <label class="field"><span>Token de admin</span><input id="admin-token" type="password" autocomplete="off" placeholder="Si el servidor define ADMIN_TOKEN"></label>
+    <label id="admin-token-field" class="field hidden"><span>Token de admin (opcional)</span><input id="admin-token" type="password" autocomplete="off" placeholder="Solo si el servidor define ADMIN_TOKEN"></label>
     <div class="center">
       <button id="btn-save-config" class="btn primary" type="button">Guardar ajustes</button>
     </div>
@@ -87,6 +88,21 @@
   </a>
 </nav>
 
-<script src="app.js?v=7" defer></script>
+<div id="onboarding" class="onboarding hidden" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+  <div class="onboarding-card">
+    <span class="onboarding-mark">GPUHunter</span>
+    <h1 id="onboarding-title">Placas de video al mejor precio</h1>
+    <p class="onboarding-text">GPUHunter monitorea 24/7 las tiendas de computación en Argentina y te avisa cuando una placa de video baje de precio.</p>
+    <ul class="onboarding-list">
+      <li>Precios de todas las tiendas en una sola pantalla</li>
+      <li>Definí tu precio objetivo por modelo</li>
+      <li>Recibí una alerta en tu celular en cuanto baja</li>
+    </ul>
+    <button id="btn-onboarding-start" class="btn primary" type="button">Comenzar y Activar Notificaciones</button>
+    <div id="onboarding-msg" class="msg"></div>
+  </div>
+</div>
+
+<script src="app.js?v=8" defer></script>
 </body>
 </html>
