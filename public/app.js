@@ -179,6 +179,62 @@
     return res;
   }
 
+  let updateBannerShown = false;
+
+  async function checkAppUpdate() {
+    if (!isNative()) return;
+    if (updateBannerShown) return;
+    try {
+      const v = await api('/app/version');
+      const latest = v && v.latestVersion;
+      const apkUrl = v && v.apkUrl;
+      if (!latest || !apkUrl) return;
+      const local = store.get('app_version') || '1.0.0';
+      if (compareVersions(latest, local) > 0) {
+        updateBannerShown = true;
+        showUpdateBanner(latest, apkUrl);
+      }
+    } catch (err) {}
+  }
+
+  function compareVersions(a, b) {
+    if (!a) a = '0.0.0';
+    if (!b) b = '0.0.0';
+    const pa = String(a).split('.').map((x) => parseInt(x) || 0);
+    const pb = String(b).split('.').map((x) => parseInt(x) || 0);
+    const max = Math.max(pa.length, pb.length);
+    for (let i = 0; i < max; i++) {
+      const da = pa[i] || 0;
+      const db = pb[i] || 0;
+      if (da !== db) return da - db;
+    }
+    return 0;
+  }
+
+  function showUpdateBanner(version, apkUrl) {
+    let el = document.getElementById('update-banner');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'update-banner';
+      el.className = 'push-banner';
+      document.body.appendChild(el);
+    }
+    el.innerHTML =
+      '<div class="pb-title">Nueva versión disponible</div>' +
+      '<div class="pb-body">Versión ' + esc(version) + '</div>' +
+      '<div style="margin-top:8px"><button class="btn" id="update-btn">Descargar APK</button></div>';
+    el.classList.add('on');
+    const btn = document.getElementById('update-btn');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        window.open(apkUrl, '_blank');
+        el.classList.remove('on');
+      }, { once: true });
+    }
+    clearTimeout(showUpdateBanner._t);
+    showUpdateBanner._t = setTimeout(() => el.classList.remove('on'), 15000);
+  }
+
   let pushListenersReady = false;
 
   function setupPushListeners(push) {
@@ -695,6 +751,7 @@
       msg.textContent = e.message || 'No se pudo activar las alertas';
     }
   });
+  checkAppUpdate();
   window.addEventListener('hashchange', route);
 
   $('btn-onboarding-start').addEventListener('click', startOnboarding);

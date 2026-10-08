@@ -149,6 +149,14 @@ router.get('/products', (req, res) => {
   });
 });
 
+router.get('/app/version', (_req, res) => {
+  res.json({
+    latestVersion: '1.1.0',
+    minVersion: '1.0.0',
+    apkUrl: 'https://github.com/lolito32/GPUHunter/releases/download/v1.1.0/app-release.apk'
+  });
+});
+
 router.get('/targets', (_req, res) => {
   res.json({ targets: getTargets() });
 });
