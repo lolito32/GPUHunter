@@ -8,7 +8,7 @@ Monitor de precios de GPUs (tiendas argentinas): backend Node.js + PWA vanilla +
 - Dependencias puras JS: **prohibido** agregar librerías con binarios nativos o C++ (Render no garantiza toolchain de build).
 - Desarrollo local en Windows + PowerShell 5.1: encadenar con `; if ($?)`, nunca `&&`. No ejecutar scripts node inline con `$(...)`; usar `.mjs` temporales en el directorio temp del sistema.
 - Servidor en `http://localhost:3000` en background: reiniciar (matar por puerto 3000) tras tocar `server/**`.
-- Al terminar tarea: commitear y pushear a `main` (mensaje en español).
+- Al terminar tarea: commitear y pushear a `dev` (mensaje en español).
 
 ## 2. Mapeo de Archivos Clave
 - `server/index.js` — bootstrap de Express, sirve `public/` y catch-all SPA.
