@@ -214,26 +214,46 @@
 
   function showUpdateBanner(version, apkUrl) {
     let el = document.getElementById('update-banner');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'update-banner';
-      el.className = 'push-banner';
-      document.body.appendChild(el);
+    if (el && el.parentNode) {
+      el.parentNode.removeChild(el);
+      el = null;
     }
+    el = document.createElement('div');
+    el.id = 'update-banner';
+    el.style.position = 'fixed';
+    el.style.top = '0';
+    el.style.left = '0';
+    el.style.right = '0';
+    el.style.zIndex = '9999';
+    el.style.background = '#ff9f0a';
+    el.style.color = '#1b1b1f';
+    el.style.padding = '10px 14px';
+    el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+    el.style.fontSize = '14px';
+    el.style.display = 'flex';
+    el.style.flexDirection = 'column';
+    el.style.gap = '6px';
+    document.body.prepend(el);
     el.innerHTML =
-      '<div class="pb-title">Nueva versión disponible</div>' +
-      '<div class="pb-body">Versión ' + esc(version) + '</div>' +
-      '<div style="margin-top:8px"><button class="btn" id="update-btn">Descargar APK</button></div>';
+      '<div style="font-weight:bold">Nueva versión disponible (v' + esc(version) + ')</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+      '<button class="btn" id="update-btn-update" style="background:#fff">Actualizar / Descargar APK</button>' +
+      '<button class="btn" id="update-btn-close" style="background:transparent;border:1px solid rgba(0,0,0,0.2)">Cerrar</button>' +
+      '</div>';
     el.classList.add('on');
-    const btn = document.getElementById('update-btn');
-    if (btn) {
-      btn.addEventListener('click', () => {
+    const btnUpdate = document.getElementById('update-btn-update');
+    const btnClose = document.getElementById('update-btn-close');
+    if (btnUpdate) {
+      btnUpdate.addEventListener('click', () => {
         window.open(apkUrl, '_blank');
-        el.classList.remove('on');
       });
     }
-    clearTimeout(showUpdateBanner._t);
-    showUpdateBanner._t = setTimeout(() => el.classList.remove('on'), 15000);
+    if (btnClose) {
+      btnClose.addEventListener('click', () => {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      });
+    }
+    if (showUpdateBanner._t) clearTimeout(showUpdateBanner._t);
   }
 
   let pushListenersReady = false;
