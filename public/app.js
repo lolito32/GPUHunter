@@ -182,19 +182,20 @@
   let updateBannerShown = false;
 
   async function checkAppUpdate() {
-    if (!isNative()) return;
-    if (updateBannerShown) return;
     try {
       const v = await api('/app/version');
       const latest = v && v.latestVersion;
       const apkUrl = v && v.apkUrl;
-      if (!latest || !apkUrl) return;
       const local = store.get('app_version') || '1.0.0';
+      console.log('[UpdateCheck]', { local, latest, apkUrl, native: isNative() });
+      if (!latest || !apkUrl) return;
       if (compareVersions(latest, local) > 0) {
         updateBannerShown = true;
         showUpdateBanner(latest, apkUrl);
       }
-    } catch (err) {}
+    } catch (err) {
+      console.log('[UpdateCheck]', 'error', err && err.message);
+    }
   }
 
   function compareVersions(a, b) {
@@ -229,7 +230,7 @@
       btn.addEventListener('click', () => {
         window.open(apkUrl, '_blank');
         el.classList.remove('on');
-      }, { once: true });
+      });
     }
     clearTimeout(showUpdateBanner._t);
     showUpdateBanner._t = setTimeout(() => el.classList.remove('on'), 15000);
