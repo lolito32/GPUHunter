@@ -1,38 +1,28 @@
-# AGENTS.md
+# GPUHunter — Contexto Único para Agentes
 
-Guía operativa del repo **GPUHunter**: monitor de precios de placas de video (ARG). Backend Node.js (Express + cheerio, ESM) + PWA vanilla en `public/` + app Android nativa via Capacitor en `android/`. Comunicación y UI en **español**, sin emojis en UI ni mensajes.
+Monitor de precios de GPUs (tiendas argentinas): backend Node.js + PWA vanilla + app Android (Capacitor). Comunicación y UI en **español**, sin emojis.
 
-## Comandos
-- `npm start` → `node server/index.js` (puerto 3000). `npm run sync` → CLI de scraping único. `npm run icons` → regenera íconos.
-- Verificación tras tocar JS: `node --check <archivo>` (varios en una cadena con `if ($?)`).
-- Smokes: levantar un server en puerto efímero con `DATA_DIR` temporal (`PORT=3220 node server/index.js`).
-- **Siempre commitear y pushear** al terminar (`git commit` en español + `git push origin main`). Era pedido explícito del dueño.
+## 1. Stack Técnico y Reglas de Entorno
+- Node.js >=20, **ESM** (`"type": "module"`), Express 4, cheerio, firebase-admin, dotenv. Backend en `server/`, PWA en `public/`, nativo en `android/`.
+- Hosting en **Render** (disco efímero en free tier): la db puede vaciarse; la PWA la restaura desde `localStorage`.
+- Dependencias puras JS: **prohibido** agregar librerías con binarios nativos o C++ (Render no garantiza toolchain de build).
+- Desarrollo local en Windows + PowerShell 5.1: encadenar con `; if ($?)`, nunca `&&`. No ejecutar scripts node inline con `$(...)`; usar `.mjs` temporales en el directorio temp del sistema.
+- Servidor en `http://localhost:3000` en background: reiniciar (matar por puerto 3000) tras tocar `server/**`.
+- Al terminar tarea: commitear y pushear a `main` (mensaje en español).
 
-## Entorno (Windows + PowerShell 5.1)
-- No existe `&&`: encadenar con `;` y `if ($?)`.
-- NO ejecutar scripts inline de Node con `$(...)` ni `\"` (PowerShell los rompe): escribir `.mjs` temporales en `C:\Users\kasper\AppData\Local\Temp\opencode\`.
-- El server de desarrollo corre en `http://localhost:3000` (proceso en background); al cambiar `server/**` hay que reiniciarlo (matar por puerto `Get-NetTCPConnection -LocalPort 3000`).
+## 2. Mapeo de Archivos Clave
+- `server/index.js` — bootstrap de Express, sirve `public/` y catch-all SPA.
+- `server/api.js` — rutas `/api/*`; claves cortas de products (`st, nm, gp, pr, ur, im, dl, sc, tg`); CORS `Access-Control-Allow-Origin: *` **obligatorio** para la WebView nativa (`https://localhost`).
+- `server/store.js` — `data/db.json` con escritura atómica (tmp+rename) y guardado diferido (`scheduleSave` ~800 ms): no leer la db justo después de un PUT.
+- `server/services/scraper.js` + `server/scrapers/` — orquesta los 7 scrapers (fullhard, compragamer, gezatek, hardgamers, malditohard, mexx, venex). Selectores exactos viven en cada módulo; no rediseñar a ciegas. MalditoHard caído = 0 items, no rompe el ciclo.
+- `server/lib/http.js` — `curlGet` para FullH4rd (Cloudflare): omitir header `accept`, cae a `curl` del PATH (requisito también en Render).
+- `server/services/monitor.js` — ciclo de sync y disparo de alertas; `server/services/fcm.js` — push vía firebase-admin (canal `gpuhunter-alerts`, poda de tokens inválidos).
+- `public/app.js` — lógica PWA: hash routing, detección Capacitor, URL del servidor en `localStorage` (`gh_api`), restauración de targets si la API responde `fresh: 1`.
+- `public/index.html` + `public/sw.js` — al tocar `public/*`: bump `?v=N` en index.html y de `SHELL`/`CACHE` en sw.js; luego `npx cap sync android`.
+- `data/db.json` — gitignored; `README.md` — documentación de usuario.
 
-## Arquitectura y datos
-- `data/db.json` (gitignored) guarda products/targets/settings/alerts/devices/status. Escritura atómica tmp+rename; guardado diferido (`scheduleSave` ~800ms) → no leer el archivo inmediatamente tras un PUT.
-- **Render free borra el disco**: server expone `fresh: 1` si la db no existe/está vacía; la PWA restaura sus targets desde `localStorage` con `PUT /api/targets`. Si `ADMIN_TOKEN` está seteado, la app manda `X-Admin-Token` (guardado en Ajustes).
-- API `/api/products` usa claves cortas: `st, nm, gp, pr, ur, im, dl, sc, tg`. No cambiar sin tocar `public/app.js`.
-
-## Scrapers (7)
-- Los selectores exactos por tienda viven en cada módulo de `server/scrapers/`; NO rediseñar a ciegas.
-- **FullH4rd (Cloudflare)**: cualquier header `accept` → 403. `server/lib/http.js` (`curlGet`) omite ese header y cae a `curl` del PATH (requisito; en Render ya está).
-- **CompraGamer**: catálogo JSON estático (`getJSON`). Imágenes: `https://imagenes.compragamer.com/productos/compragamer_Imganen_general_<imagenes[0].nombre>-mini.jpg` (el typo "Imganen" está en su config, es real).
-- **MalditoHard**: dominio caído → 0 items esperado, no rompe el ciclo.
-
-## Frontend (PWA)
-- Al tocar `public/*`: bump `?v=N` en `index.html` (css y js), `SHELL` y `CACHE` en `sw.js`. Hoy en v7.
-- Estética dark mínima Vercel/Linear; sin gradientes/neón/iridiscencias/emojis.
-- `app.js` detecta Capacitor (`window.Capacitor.isNativePlatform()`); en la app Android la URL del servidor va en `localStorage` (`gh_api`, configurable en Ajustes) porque `capacitor://` no es origen válido.
-
-## App Android / Capacitor
-- `capacitor.config.json` en la raíz: `appId: ar.com.gpuhunter`, `webDir: public`, scheme `https`. `android/` está versionado (generado con `npx cap add android`).
-- Tras cambios en `public/`: `npx cap sync android` (ya fue corrido).
-- **CORS**: el WebView nativo hace fetch a la API con origen `https://localhost` → `server/api.js` responde `Access-Control-Allow-Origin: *`, métodos GET/POST/PUT/DELETE y headers `content-type, x-admin-token` con preflight OPTIONS 204. NO quitar: sin CORS la app nativa no puede consumir `/api/*`.
-- **Push (FCM)**: backend con `server/services/fcm.js` (firebase-admin). Credenciales: env `FIREBASE_SERVICE_ACCOUNT` (JSON plano o base64) o archivo `DATA_DIR/firebase-service-account.json` (ambas detectadas por `isFcmConfigured()`). El canal de notificación es `gpuhunter-alerts` y lo crea `app.js` (`createChannel`, flujo fijo); el server lo usa como `android.notification.channelId`. Tokens: registro en `store.registerDevice` exige longitud >= 20; los tokens inválidos se podan en `sendPushToDevices` (fcm.js → `unregisterDevice`) y `monitor.js` refresca `getDevices()` en cada iteración.
-- Telegram fue **eliminado** (monitor.js ahora dispara FCM a `devices` vía `sendPushToDevices`).
-- `android/app/google-services.json` (project_id `gpuhunter-642ca`) está **committeado**; sin él, el build aplica el plugin de google-services solo por try/catch y push no funciona. El flujo push del usuario: Ajustes → URL del servidor → Activar alertas (crea canal, pide permiso, obtiene token, `POST /api/register-device`); en el boot se re-registra el token guardado si `push_on` está activo.
+## 3. Reglas de Operación Estrictas para Agentes
+1. Imports relativos **siempre con extensión `.js`** (ESM).
+2. **Prohibido** `continue` dentro de callbacks o `forEach` (usar `for...of` o `return`).
+3. **Prohibido** ejecutar scripts de verificación en bucle continuo por consola.
+4. Validar sintaxis con `node --check <archivo>` **una sola vez** por archivo y finalizar la tarea.
