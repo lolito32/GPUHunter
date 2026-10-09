@@ -13,7 +13,7 @@ export const DATA_DIR = path.resolve(process.env.DATA_DIR || './data');
 export const PORT = int(process.env.PORT, 3000);
 export const HOST = process.env.HOST || '0.0.0.0';
 export const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
-export const SYNC_INTERVAL_MIN = int(process.env.SYNC_INTERVAL_MIN, 12);
+export const SYNC_INTERVAL_MIN = int(process.env.SYNC_INTERVAL_MIN, 240);
 export const MAX_PAGES = int(process.env.MAX_PAGES, 4);
 export const SCRAP_TIMEOUT_MS = int(process.env.SCRAP_TIMEOUT_MS, 30000);
 
