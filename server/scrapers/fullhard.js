@@ -22,12 +22,13 @@ export default {
         const price = parsePrice(card.find('.results-card__price-current').first().text());
         if (!name || !href || !price) return;
         const img = card.find('img.results-card__image').first().attr('src') || '';
+        const rawUrl = href.startsWith('http') ? href : `https://fullh4rd.com.ar${href}`;
         found.push({
           store: 'fullhard',
           id: (href.match(/\/prod\/(\d+)\//) || [])[1] || href,
           name,
           price,
-          url: href.startsWith('http') ? href : `https://fullh4rd.com.ar${href}`,
+          url: rawUrl.split('?')[0],
           image: img ? (img.startsWith('http') ? img : `https://fullh4rd.com.ar${img}`) : ''
         });
       });
