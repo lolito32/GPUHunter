@@ -35,7 +35,8 @@ function readArray(key) {
 
 export const activeFilters = {
   brands: readArray('filter_brands'),
-  series: readArray('filter_series')
+  series: readArray('filter_series'),
+  models: readArray('filter_models')
 };
 
 export function inferBrandSeries(gp) {
@@ -68,20 +69,29 @@ function seriesBrand(series) {
   return null;
 }
 
-function sanitizeSeries() {
+function sanitizeCascade() {
   if (!activeFilters.brands.length) {
     activeFilters.series = [];
-    return;
+  } else {
+    activeFilters.series = activeFilters.series.filter((s) => activeFilters.brands.includes(seriesBrand(s)));
   }
-  activeFilters.series = activeFilters.series.filter((s) => activeFilters.brands.includes(seriesBrand(s)));
+  if (!activeFilters.series.length) {
+    activeFilters.models = [];
+  } else {
+    activeFilters.models = activeFilters.models.filter((m) => {
+      const info = inferBrandSeries(m);
+      return info && activeFilters.series.includes(info.series);
+    });
+  }
 }
 
-sanitizeSeries();
+sanitizeCascade();
 store.set('filter_brands', activeFilters.brands);
 store.set('filter_series', activeFilters.series);
+store.set('filter_models', activeFilters.models);
 
 export function isFilterActive() {
-  return activeFilters.brands.length > 0 || activeFilters.series.length > 0;
+  return activeFilters.brands.length > 0 || activeFilters.series.length > 0 || activeFilters.models.length > 0;
 }
 
 export function itemMatchesFilters(item) {
@@ -90,6 +100,7 @@ export function itemMatchesFilters(item) {
   if (!info) return false;
   if (activeFilters.brands.length && !activeFilters.brands.includes(info.brand)) return false;
   if (activeFilters.series.length && !activeFilters.series.includes(info.series)) return false;
+  if (activeFilters.models.length && !activeFilters.models.includes(item.gp)) return false;
   return true;
 }
 
@@ -102,25 +113,35 @@ export function toggleBrand(brand) {
   const idx = activeFilters.brands.indexOf(brand);
   if (idx >= 0) activeFilters.brands.splice(idx, 1);
   else activeFilters.brands.push(brand);
-  sanitizeSeries();
+  sanitizeCascade();
   store.set('filter_brands', activeFilters.brands);
   store.set('filter_series', activeFilters.series);
+  store.set('filter_models', activeFilters.models);
 }
 
 export function toggleSeries(series) {
   const idx = activeFilters.series.indexOf(series);
   if (idx >= 0) activeFilters.series.splice(idx, 1);
   else activeFilters.series.push(series);
+  sanitizeCascade();
   store.set('filter_series', activeFilters.series);
+  store.set('filter_models', activeFilters.models);
+}
+
+export function toggleModel(model) {
+  const idx = activeFilters.models.indexOf(model);
+  if (idx >= 0) activeFilters.models.splice(idx, 1);
+  else activeFilters.models.push(model);
+  store.set('filter_models', activeFilters.models);
 }
 
 export function activeFilterCount() {
-  return activeFilters.brands.length + activeFilters.series.length;
+  return activeFilters.brands.length + activeFilters.series.length + activeFilters.models.length;
 }
 
 function chipHtml(active, attr, value, label, count) {
   return (
-    '<button class="chip' + (active ? ' on' : '') + '" ' + attr + '="' + esc(value) + '">' +
+    '<button class="chip' + (active ? ' on' : '') + (count ? '' : ' zero') + '" ' + attr + '="' + esc(value) + '">' +
     esc(label) + ' <span class="n">' + count + '</span></button>'
   );
 }
@@ -128,8 +149,10 @@ function chipHtml(active, attr, value, label, count) {
 export function renderFilterChips() {
   const brandEl = $('chips-brand');
   const seriesEl = $('chips-series');
+  const modelEl = $('chips-model');
   const seriesGroup = $('series-group');
-  if (!brandEl || !seriesEl) return;
+  const modelGroup = $('model-group');
+  if (!brandEl || !seriesEl || !modelEl) return;
 
   const gpus = (state.meta && state.meta.gpus) || [];
   const brandCounts = {};
@@ -150,19 +173,37 @@ export function renderFilterChips() {
     .map((b) => chipHtml(activeFilters.brands.includes(b), 'data-filter-brand', b, BRAND_LABELS[b], brandCounts[b]))
     .join('');
 
-  const selected = activeFilters.brands;
-  const showSeries = selected.length > 0;
+  const selectedBrands = activeFilters.brands;
+  const showSeries = selectedBrands.length > 0;
   if (seriesGroup) seriesGroup.classList.toggle('hidden', !showSeries);
   if (!showSeries) {
     seriesEl.innerHTML = '';
+    if (modelGroup) modelGroup.classList.add('hidden');
+    modelEl.innerHTML = '';
     return;
   }
 
-  const belongs = (s) => selected.includes(seriesBrands[s]);
-  const known = SERIES_ORDER.filter((s) => seriesCounts[s] && belongs(s));
-  const extras = Object.keys(seriesCounts).filter((s) => !SERIES_ORDER.includes(s) && belongs(s));
+  const belongsBrand = (s) => selectedBrands.includes(seriesBrands[s]);
+  const known = SERIES_ORDER.filter((s) => seriesCounts[s] && belongsBrand(s));
+  const extras = Object.keys(seriesCounts).filter((s) => !SERIES_ORDER.includes(s) && belongsBrand(s));
   seriesEl.innerHTML = known
     .concat(extras)
     .map((s) => chipHtml(activeFilters.series.includes(s), 'data-filter-series', s, SERIES_LABELS[s] || s.toUpperCase(), seriesCounts[s]))
+    .join('');
+
+  const selectedSeries = activeFilters.series;
+  const showModels = selectedSeries.length > 0;
+  if (modelGroup) modelGroup.classList.toggle('hidden', !showModels);
+  if (!showModels) {
+    modelEl.innerHTML = '';
+    return;
+  }
+
+  modelEl.innerHTML = gpus
+    .filter((g) => {
+      const info = inferBrandSeries(g.k);
+      return info && selectedSeries.includes(info.series);
+    })
+    .map((g) => chipHtml(activeFilters.models.includes(g.k), 'data-filter-model', g.k, g.l, g.n || 0))
     .join('');
 }

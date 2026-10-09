@@ -20,7 +20,7 @@ import {
   saveConfig,
   syncNow
 } from '../views/render.js';
-import { renderFilterChips, toggleBrand, toggleSeries } from '../views/filters.js';
+import { renderFilterChips, toggleBrand, toggleSeries, toggleModel } from '../views/filters.js';
 
 export function updateSortInfoVisibility() {
   const sortEl = $('sort');
@@ -115,10 +115,11 @@ export function setupEvents() {
   });
 
   $('filters').addEventListener('click', (e) => {
-    const chip = e.target.closest('[data-filter-brand], [data-filter-series]');
+    const chip = e.target.closest('[data-filter-brand], [data-filter-series], [data-filter-model]');
     if (!chip) return;
     if (chip.dataset.filterBrand) toggleBrand(chip.dataset.filterBrand);
     else if (chip.dataset.filterSeries) toggleSeries(chip.dataset.filterSeries);
+    else if (chip.dataset.filterModel) toggleModel(chip.dataset.filterModel);
     renderFilterChips();
     renderFiltersCount();
     renderList(false);
