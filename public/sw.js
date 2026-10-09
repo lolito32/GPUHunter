@@ -1,12 +1,22 @@
-const CACHE = 'gpuhunter-v13';
+const CACHE = 'gpuhunter-v1791606332';
 const SHELL = [
   './',
   'index.html',
   'app.css?v=13',
-  'app.js?v=13',
+  'app.js?v=1791606332',
   'manifest.webmanifest',
   'icons/icon-192.png',
-  'icons/icon-512.png'
+  'icons/icon-512.png',
+  'js/utils/dom.js',
+  'js/utils/format.js',
+  'js/utils/store.js',
+  'js/services/api.js',
+  'js/services/push.js',
+  'js/services/update.js',
+  'js/state/state.js',
+  'js/components/banners.js',
+  'js/views/render.js',
+  'js/events/events.js'
 ];
 
 self.addEventListener('install', (event) => {
