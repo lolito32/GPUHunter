@@ -50,4 +50,5 @@
   3. Deducir los selectores exactos: contenedor de tarjeta, título/enlace, precio, imagen e identificador.
   4. Implementar el scraper definitivo en `server/scrapers/<store>.js` y registrarlo en `server/scrapers/index.js` y `server/config.js`.
   5. Validar con `node --check` y ELIMINAR el script temporal.
+- 6. MANDATORY AUTO-EXPLORATION: When adding new stores, you MUST NOT ask the user for HTML snippets or selectors. You MUST write temporary Node.js scripts (e.g., `temp-fetch.mjs`) to fetch the target website, parse the DOM with Cheerio in your own console, deduce the CSS selectors, implement the actual scraper in `server/scrapers/`, and then delete the temporary script.
 - **NUNCA** delegar en el usuario el descubrimiento de selectores ni la resolución de bloqueos anti-bot. El agente es 100% responsable de la exploración del sitio.
