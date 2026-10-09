@@ -1,3 +1,5 @@
+'use strict';
+import { checkAppUpdate } from './js/services/update.js';
 (() => {
   'use strict';
 
