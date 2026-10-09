@@ -1,33 +1,44 @@
-# GPUHunter — Contexto Único para Agentes
+# SYSTEM CONTEXT: GPUHunter
+**CRITICAL INSTRUCTION FOR ALL AI AGENTS:** Read this document entirely before executing any task. This is a strict machine-to-machine operations protocol.
 
-Monitor de precios de GPUs (tiendas argentinas): backend Node.js + PWA vanilla + app Android (Capacitor). Comunicación y UI en **español**, sin emojis.
+## 1. CORE ARCHITECTURE & ENVIRONMENT
+- **Stack:** Node.js >=20, ESM (`"type": "module"`), Express 4, Cheerio, Firebase-admin, vanilla JS (Frontend), Capacitor (Android).
+- **Hosting:** Render (Free Tier). Ephemeral disk: `data/db.json` is volatile and can be wiped. PWA restores it via `localStorage`.
+- **Dependencies:** Strictly pure JS. PROHIBITED to add native binaries or C/C++ packages (Render build toolchain is unsupported).
+- **Local Env:** Windows OS + PowerShell 5.1.
+- **Server:** `http://localhost:3000`. Restart by killing port 3000 process ONLY when `server/**` files are modified.
 
-## 1. Stack Técnico y Reglas de Entorno
-- Node.js >=20, **ESM** (`"type": "module"`), Express 4, cheerio, firebase-admin, dotenv. Backend en `server/`, PWA en `public/`, nativo en `android/`.
-- Hosting en **Render** (disco efímero en free tier): la db puede vaciarse; la PWA la restaura desde `localStorage`.
-- Dependencias puras JS: **prohibido** agregar librerías con binarios nativos o C++ (Render no garantiza toolchain de build).
-- Desarrollo local en Windows + PowerShell 5.1: encadenar con `; if ($?)`, nunca `&&`. No ejecutar scripts node inline con `$(...)`; usar `.mjs` temporales en el directorio temp del sistema.
-- Servidor en `http://localhost:3000` en background: reiniciar (matar por puerto 3000) tras tocar `server/**`.
-- Al terminar tarea: commitear y pushear a `dev` (mensaje en español).
+## 2. STRICT OPERATIONAL DIRECTIVES (CRITICAL)
+- **FILE MANIPULATION (HARD RULE):** You are STRICTLY PROHIBITED from using terminal commands (e.g., `Set-Content`, `Out-File`, `echo`, `$out+=`) to write, create, or modify code. You MUST use your native internal file-editing tools (e.g., `write_file`, `edit_file`).
+- **RESTRICTED TERMINAL USAGE:** The terminal is strictly restricted to:
+  1. Git commands (`git status`, `git add`, `git commit`, `git push`).
+  2. Syntax validation (`node --check <file>`). Execute ONCE per file. DO NOT run infinite validation loops.
+  3. Capacitor synchronization (`npx cap sync android`).
+  4. Node.js server restart.
+- **GIT WORKFLOW:** Commit and push EXCLUSIVELY to the `dev` branch. NEVER push to `main`. Commit messages must be clear and written in Spanish.
+- **CODING STANDARDS:**
+  - ESM imports MUST include the `.js` extension explicitly (e.g., `import { api } from './js/services/api.js'`).
+  - PROHIBITED to use `continue` inside callbacks or `forEach`. Use `for...of` or `return` instead.
+  - DO NOT modify business logic or existing function signatures during refactoring tasks.
 
-## 2. Mapeo de Archivos Clave
-- `server/index.js` — bootstrap de Express, sirve `public/` y catch-all SPA.
-- `server/api.js` — rutas `/api/*`; claves cortas de products (`st, nm, gp, pr, ur, im, dl, sc, tg`); CORS `Access-Control-Allow-Origin: *` **obligatorio** para la WebView nativa (`https://localhost`).
-- `server/store.js` — `data/db.json` con escritura atómica (tmp+rename) y guardado diferido (`scheduleSave` ~800 ms): no leer la db justo después de un PUT.
-- `server/services/scraper.js` + `server/scrapers/` — orquesta los 7 scrapers (fullhard, compragamer, gezatek, hardgamers, malditohard, mexx, venex). Selectores exactos viven en cada módulo; no rediseñar a ciegas. MalditoHard caído = 0 items, no rompe el ciclo.
-- `server/lib/http.js` — `curlGet` para FullH4rd (Cloudflare): omitir header `accept`, cae a `curl` del PATH (requisito también en Render).
-- `server/services/monitor.js` — ciclo de sync y disparo de alertas; `server/services/fcm.js` — push vía firebase-admin (canal `gpuhunter-alerts`, poda de tokens inválidos).
-- `public/app.js` — punto de entrada ultraliviano (ESM).
-- `public/js/api.js` — cliente HTTP (fetch a `/api/*`, `apiBase` desde `localStorage` `gh_api`).
-- `public/js/state.js` — estado cliente (productos, filtros, configuración, targets).
-- `public/js/ui.js` — renderizado, banners, In-App Update, detección Capacitor.
-- `public/js/events.js` — escuchadores de eventos.
-- `public/index.html` + `public/sw.js` — al tocar `public/*`: bump `?v=N` en index.html y de `SHELL`/`CACHE` en sw.js; luego `npx cap sync android`.
-- `data/db.json` — gitignored; `README.md` — documentación de usuario.
+## 3. FILE SYSTEM MAPPING
+### Backend (`server/`)
+- `server/index.js`: Express bootstrap, SPA catch-all logic.
+- `server/api.js`: Routes `/api/*`. Payload keys: `st, nm, gp, pr, ur, im, dl, sc, tg`. CORS `Access-Control-Allow-Origin: *` is MANDATORY for Capacitor native WebView (`https://localhost`).
+- `server/store.js`: Atomic `data/db.json` writing (tmp+rename), deferred `scheduleSave` (~800ms). DO NOT read immediately after a PUT.
+- `server/services/scraper.js` & `server/scrapers/`: Scraper orchestration. Selectors are exact; DO NOT redesign blindly. Note: "MalditoHard" down = 0 items (this is expected, do not break the loop).
+- `server/lib/http.js`: `curlGet` for FullH4rd (Cloudflare bypass). Drops `accept` header, falls back to system `curl` in PATH.
+- `server/services/monitor.js` & `server/services/fcm.js`: Sync loop, alerts, Firebase push (channel `gpuhunter-alerts`, automatic invalid token pruning).
 
-## 3. Reglas de Operación Estrictas para Agentes
-1. Imports relativos **siempre con extensión `.js`** (ESM).
-2. En cliente, imports siempre con extensión `.js` explícita (ej: `import { ... } from './js/api.js'`).
-3. **Prohibido** `continue` dentro de callbacks o `forEach` (usar `for...of` o `return`).
-4. **Prohibido** ejecutar scripts de verificación en bucle continuo por consola.
-5. Validar sintaxis con `node --check <archivo>` **una sola vez** por archivo y finalizar la tarea.
+### Frontend (`public/` - Modular ESM Architecture)
+- `public/app.js`: Lightweight entry point. Bootstraps the app and imports modules.
+- `public/js/utils/`: Independent helpers (`dom.js`, `format.js`, `store.js`).
+- `public/js/services/`: API and Network clients (`api.js`, `push.js`, `update.js`).
+- `public/js/state/`: Global state manager (`state.js`).
+- `public/js/components/`: Reusable UI elements and alerts (`banners.js`).
+- `public/js/views/`: UI render logic and DOM construction (`render.js`).
+- `public/js/events/`: Routers and event listeners (`events.js`).
+
+### Cache & Versioning Rules
+- **Cache/Version Control:** Whenever ANY file in `public/*` is modified, you MUST bump the version parameter `?v=N` in `public/index.html` AND update the `SHELL`/`CACHE` strings in `public/sw.js`.
+- Execute `npx cap sync android` only when web asset changes impact the native Capacitor wrapper.
