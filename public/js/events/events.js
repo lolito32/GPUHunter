@@ -35,7 +35,24 @@ export function route() {
   const map = { '#/': 'offers', '#/targets': 'targets', '#/config': 'config' };
   const view = map[hash] || 'offers';
   for (const name of ['offers', 'targets', 'config']) {
-    $('view-' + name).classList.toggle('hidden', name !== view);
+    const el = $('view-' + name);
+    const isTarget = name === view;
+    if (isTarget) {
+      if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+        el.classList.remove('active');
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            el.classList.add('active');
+          });
+        });
+      } else {
+        el.classList.add('active');
+      }
+    } else {
+      el.classList.remove('active');
+      el.classList.add('hidden');
+    }
   }
   document.querySelectorAll('[data-nav]').forEach((a) => {
     a.classList.toggle('active', a.dataset.nav === view);
