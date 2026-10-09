@@ -28,6 +28,11 @@ export function renderChips() {
   } else {
     gpuHtml.push('<button class="chip" data-deal="1">Bajo objetivo <span class="n">' + m.underTarget + '</span></button>');
   }
+  if (state.used) {
+    gpuHtml.push('<button class="chip on" data-used="1">Usadas <span class="n">' + (m.usedCount || 0) + '</span></button>');
+  } else {
+    gpuHtml.push('<button class="chip" data-used="1">Usadas <span class="n">' + (m.usedCount || 0) + '</span></button>');
+  }
   for (const g of gpus) {
     gpuHtml.push(
       '<button class="chip' + (state.gpu === g.k ? ' on' : '') + '" data-gpu="' + esc(g.k) + '">' + esc(g.l) +
@@ -113,6 +118,7 @@ export function query(extra) {
   if (state.gpu) p.set('gpu', state.gpu);
   if (state.storeKey) p.set('store', state.storeKey);
   if (state.deal) p.set('deal', '1');
+  if (state.used) p.set('used', '1');
   if (state.q) p.set('q', state.q);
   if (extra && extra.page) p.set('page', String(extra.page));
   return p.toString();

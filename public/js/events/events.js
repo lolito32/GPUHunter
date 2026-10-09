@@ -84,12 +84,14 @@ async function startOnboarding() {
 
 export function setupEvents() {
   $('chips-gpu').addEventListener('click', (e) => {
-    const chip = e.target.closest('[data-gpu], [data-deal]');
+    const chip = e.target.closest('[data-gpu], [data-deal], [data-used]');
     if (!chip) return;
     if (chip.dataset.deal) state.deal = !state.deal;
+    else if (chip.dataset.used) state.used = !state.used;
     else state.gpu = chip.dataset.gpu;
     store.set('gpu', state.gpu);
     store.set('deal', state.deal);
+    store.set('used', state.used);
     renderChips();
     load(1);
   });

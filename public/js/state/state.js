@@ -6,6 +6,7 @@ export const state = {
   gpu: store.get('gpu', ''),
   storeKey: store.get('store', ''),
   deal: store.get('deal', false),
+  used: store.get('used', false),
   sort: store.get('sort', 'price-asc'),
   q: '',
   items: [],

@@ -65,6 +65,7 @@ router.get('/meta', (_req, res) => {
   const gpuMap = new Map();
   const storeMap = new Map();
   let underTarget = 0;
+  let usedCount = 0;
 
   for (const product of products) {
     const gpu = gpuMap.get(product.gpu) || { k: product.gpu, l: labelForKey(product.gpu), n: 0 };
@@ -75,6 +76,7 @@ router.get('/meta', (_req, res) => {
     store.n++;
     storeMap.set(product.store, store);
 
+    if (product.used) usedCount++;
     if (targets[product.gpu] && product.price <= targets[product.gpu]) underTarget++;
   }
 
@@ -93,6 +95,7 @@ router.get('/meta', (_req, res) => {
     fresh: isFreshStart() ? 1 : 0,
     total: products.length,
     underTarget,
+    usedCount,
     alertsSent: status.alertsSent || 0,
     intervalMin: settings.intervalMin || SYNC_INTERVAL_MIN,
     gpus,
@@ -113,7 +116,7 @@ router.get('/offers', (req, res) => {
 });
 
 router.get('/products', (req, res) => {
-  const { gpu, store, q, deal } = req.query;
+  const { gpu, store, q, deal, used } = req.query;
   const page = clamp(req.query.page, 1, 1, 10000);
   const limit = clamp(req.query.limit, 60, 1, 500);
   const sort = ['price-asc', 'price-desc', 'name'].includes(req.query.sort) ? req.query.sort : 'price-asc';
@@ -125,6 +128,7 @@ router.get('/products', (req, res) => {
   if (store) list = list.filter((p) => p.store === store);
   if (needle) list = list.filter((p) => normalize(p.name).includes(needle));
   if (deal === '1') list = list.filter((p) => targets[p.gpu] && p.price <= targets[p.gpu]);
+  if (used === '1') list = list.filter((p) => p.used);
 
   if (sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name, 'es'));
   else if (sort === 'price-desc') list.sort((a, b) => b.price - a.price);
