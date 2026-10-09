@@ -1,6 +1,7 @@
 'use strict';
 import { $ } from '../utils/dom.js';
 import { esc, money, timeAgo } from '../utils/format.js';
+import { formatCostPerFps } from '../utils/metrics.js';
 import { store } from '../utils/store.js';
 import { state } from '../state/state.js';
 import { api, apiBase, adminToken, DEFAULT_ADMIN } from '../services/api.js';
@@ -94,6 +95,7 @@ export function cardHtml(item) {
   const source = item.sc ? '<span class="via">via ' + esc(item.sc) + '</span>' : '';
   const usedTag = item.us ? '<span class="used-tag">USADA</span>' : '';
   const tag = deal ? '<span class="deal-tag">bajo objetivo</span>' : '';
+  const valueBadge = formatCostPerFps(item.gp, item.pr) ? '<span class="value-badge" title="Costo por FPS ($/FPS)">' + esc(formatCostPerFps(item.gp, item.pr)) + '</span>' : '';
   const thumb = item.im
     ? '<img class="thumb" src="' +
       esc(item.im) +
@@ -122,7 +124,7 @@ export function cardHtml(item) {
     thumb +
     '<div class="row-col">' +
     '<div class="row-top"><span class="store-pill">' + esc(storeName(item.st)) + '</span>' +
-    usedTag + source + tag + '</div>' +
+    usedTag + source + tag + valueBadge + '</div>' +
     '<h3 class="name">' + esc(item.nm) + '</h3>' +
     '<div class="row-bottom"><div class="price-wrap"><span class="price">' + money(item.pr) +
     '</span>' + delta + '</div>' +

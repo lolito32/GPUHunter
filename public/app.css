@@ -811,6 +811,19 @@ h2 {
 
 .fcm-status:focus { outline: none; border-color: #45474c; }
 
+.value-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dim, #8b949e);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
 @media (min-width: 720px) {
   .view { padding-top: 24px; }
 }
