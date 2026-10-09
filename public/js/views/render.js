@@ -11,16 +11,21 @@ import { isNative } from '../services/update.js';
 let pollTimer = null;
 
 export function renderStatus() {
-  const m = state.meta;
+  const m = state.meta || {
+    lastSync: store.get('cached_last_sync', 0),
+    total: store.get('cached_total', state.items.length || 0),
+    underTarget: 0
+  };
   const el = $('status');
-  if (!m) return;
+  if (!el) return;
   const timeStr = timeAgo(m.lastSync);
+  const totalOffers = m.total !== undefined ? m.total : (state.total || state.items.length);
   if (state.offline) {
-    el.textContent = 'Offline - Datos guardados (' + timeStr + ') · ' + m.total + ' ofertas';
+    el.textContent = 'Offline - Datos guardados (' + timeStr + ') · ' + totalOffers + ' ofertas';
     el.title = 'Modo offline - Última sincronización ' + timeStr;
   } else {
     el.textContent =
-      'Actualizado ' + timeStr + ' · ' + m.total + ' ofertas' + (m.underTarget ? ' · ' + m.underTarget + ' bajo objetivo' : '');
+      'Actualizado ' + timeStr + ' · ' + totalOffers + ' ofertas' + (m.underTarget ? ' · ' + m.underTarget + ' bajo objetivo' : '');
     el.title = m.syncing ? 'Sincronizando…' : 'Última sincronización ' + timeStr;
   }
 }
@@ -189,6 +194,7 @@ export async function load(page) {
       store.set('cached_items', data.items);
       store.set('cached_total', data.total);
       store.set('cached_pages', data.pages);
+      if (data.total !== undefined) store.set('cached_total', data.total);
     }
     state.offline = false;
     renderList(page !== 1);
@@ -200,6 +206,14 @@ export async function load(page) {
       state.pages = store.get('cached_pages', 1);
       state.page = 1;
       state.offline = true;
+      if (!state.meta) {
+        state.meta = {
+          lastSync: store.get('cached_last_sync', 0),
+          total: state.total,
+          gpus: [],
+          stores: []
+        };
+      }
       renderList(false);
       renderStatus();
     } else {
@@ -218,6 +232,8 @@ export async function loadMeta() {
     if (!state.meta.fresh) store.set('targets', state.meta.targets || {});
     else maybeRestoreTargets(state.meta);
     store.set('cached_meta', state.meta);
+    if (state.meta.lastSync) store.set('cached_last_sync', state.meta.lastSync);
+    if (state.meta.total !== undefined) store.set('cached_total', state.meta.total);
     renderStatus();
     renderChips();
   } catch (err) {
@@ -228,11 +244,14 @@ export async function loadMeta() {
       renderStatus();
       renderChips();
     } else {
-      const el = $('status');
-      if (el) {
-        el.textContent = 'Offline - Sin datos guardados';
-        el.title = 'Sin conexión con el servidor';
-      }
+      state.offline = true;
+      state.meta = {
+        lastSync: store.get('cached_last_sync', 0),
+        total: store.get('cached_total', 0),
+        gpus: [],
+        stores: []
+      };
+      renderStatus();
     }
   }
 }
