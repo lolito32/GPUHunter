@@ -14,9 +14,15 @@ export function renderStatus() {
   const m = state.meta;
   const el = $('status');
   if (!m) return;
-  el.textContent =
-    'Sync ' + timeAgo(m.lastSync) + ' · ' + m.total + ' ofertas' + (m.underTarget ? ' · ' + m.underTarget + ' bajo objetivo' : '');
-  el.title = m.syncing ? 'Sincronizando…' : 'Última sincronización ' + timeAgo(m.lastSync);
+  const timeStr = timeAgo(m.lastSync);
+  if (state.offline) {
+    el.textContent = 'Offline - Datos guardados (' + timeStr + ') · ' + m.total + ' ofertas';
+    el.title = 'Modo offline - Última sincronización ' + timeStr;
+  } else {
+    el.textContent =
+      'Actualizado ' + timeStr + ' · ' + m.total + ' ofertas' + (m.underTarget ? ' · ' + m.underTarget + ' bajo objetivo' : '');
+    el.title = m.syncing ? 'Sincronizando…' : 'Última sincronización ' + timeStr;
+  }
 }
 
 export function renderChips() {
@@ -143,7 +149,7 @@ export function renderList(append) {
     mountCharts(list);
   }
   $('list-meta').textContent = state.total
-    ? state.items.length + ' de ' + state.total + ' ofertas' + (state.meta ? ' · datos ' + timeAgo(state.meta.lastSync) : '')
+    ? state.items.length + ' de ' + state.total + ' ofertas' + (state.meta ? ' · ' + (state.offline ? 'Offline (' + timeAgo(state.meta.lastSync) + ')' : 'Actualizado ' + timeAgo(state.meta.lastSync)) : '')
     : '';
   $('btn-more').classList.toggle('hidden', state.page >= state.pages);
 }
@@ -179,9 +185,26 @@ export async function load(page) {
     state.pages = data.pages;
     state.total = data.total;
     state.items = page === 1 ? data.items : state.items.concat(data.items);
+    if (page === 1) {
+      store.set('cached_items', data.items);
+      store.set('cached_total', data.total);
+      store.set('cached_pages', data.pages);
+    }
+    state.offline = false;
     renderList(page !== 1);
   } catch (err) {
-    $('list').innerHTML = '<div class="empty">No se pudo cargar: ' + esc(err.message) + '</div>';
+    const cachedItems = store.get('cached_items', null);
+    if (page === 1 && cachedItems && cachedItems.length > 0) {
+      state.items = cachedItems;
+      state.total = store.get('cached_total', cachedItems.length);
+      state.pages = store.get('cached_pages', 1);
+      state.page = 1;
+      state.offline = true;
+      renderList(false);
+      renderStatus();
+    } else {
+      $('list').innerHTML = '<div class="empty">No se pudo cargar: ' + esc(err.message) + '<br>Modo offline sin datos cacheados.</div>';
+    }
   } finally {
     state.loading = false;
   }
@@ -191,12 +214,26 @@ export async function loadMeta() {
   try {
     state.meta = await api('/meta');
     state.metaAt = Date.now();
+    state.offline = false;
     if (!state.meta.fresh) store.set('targets', state.meta.targets || {});
     else maybeRestoreTargets(state.meta);
+    store.set('cached_meta', state.meta);
     renderStatus();
     renderChips();
   } catch (err) {
-    $('status').textContent = 'Sin conexión con el servidor';
+    const cachedMeta = store.get('cached_meta', null);
+    if (cachedMeta) {
+      state.meta = cachedMeta;
+      state.offline = true;
+      renderStatus();
+      renderChips();
+    } else {
+      const el = $('status');
+      if (el) {
+        el.textContent = 'Offline - Sin datos guardados';
+        el.title = 'Sin conexión con el servidor';
+      }
+    }
   }
 }
 
