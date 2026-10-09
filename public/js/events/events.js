@@ -19,6 +19,14 @@ import {
   syncNow
 } from '../views/render.js';
 
+export function updateSortInfoVisibility() {
+  const sortEl = $('sort');
+  const infoEl = $('sort-info');
+  if (!sortEl || !infoEl) return;
+  const isValueSort = sortEl.value === 'value-asc' || sortEl.value === 'value-desc';
+  infoEl.classList.toggle('hidden', !isValueSort);
+}
+
 export function route() {
   const hash = location.hash || '#/';
   const map = { '#/': 'offers', '#/targets': 'targets', '#/config': 'config' };
@@ -142,9 +150,11 @@ export function setupEvents() {
   }
 
   $('sort').value = state.sort;
+  updateSortInfoVisibility();
   $('sort').addEventListener('change', (e) => {
     state.sort = e.target.value;
     store.set('sort', state.sort);
+    updateSortInfoVisibility();
     load(1);
   });
 
