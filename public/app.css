@@ -284,26 +284,69 @@ body {
 .delta.down { color: var(--good); }
 .delta.up { color: var(--bad); }
 
-.spark { margin-top: 10px; }
+.spark { margin-top: 12px; }
 
-.spark > summary {
+.spark-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   cursor: pointer;
   user-select: none;
   list-style: none;
-  font-size: 11.5px;
+  background: var(--chip);
+  border: 1px solid var(--line-2);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 6px 12px 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.spark-btn::-webkit-details-marker { display: none; }
+.spark-btn:hover { background: var(--btn); color: var(--text); border-color: #45474c; }
+.spark-ico { flex: none; color: var(--good); }
+
+.spark-count {
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-size: 10.5px;
   color: var(--faint);
 }
 
-.spark > summary::-webkit-details-marker { display: none; }
-.spark > summary::before { content: "▸ "; }
-.spark[open] > summary::before { content: "▾ "; }
-.spark > summary:hover { color: var(--muted); }
+.spark[open] .spark-btn { background: var(--btn); color: var(--text); }
+
+.spark-body {
+  margin-top: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px 6px;
+}
 
 .sparkline {
   display: block;
   width: 100%;
-  height: 48px;
-  margin-top: 8px;
+  height: auto;
+  touch-action: pan-y;
+}
+
+.spark-grid-line { stroke: var(--line); stroke-width: 1; }
+.spark-ylab, .spark-xlab { fill: var(--faint); font-size: 10px; font-family: var(--font); }
+.spark-cursor { stroke: var(--faint); stroke-width: 1; stroke-dasharray: 3 3; }
+.spark-dot { fill: #ffffff; stroke: var(--bg); stroke-width: 1.5; }
+.spark-tip-bg { fill: rgba(20, 20, 22, .96); stroke: var(--line-2); stroke-width: 1; }
+.spark-tip-date { fill: var(--faint); font-size: 10px; font-family: var(--font); }
+.spark-tip-price { fill: #ffffff; font-size: 14px; font-weight: 600; font-family: var(--font); }
+
+.spark-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 4px 2px 8px;
 }
 
 .go {

@@ -13,6 +13,7 @@ import {
 import { detectGpu, looksLikeVideoCard } from '../gpu.js';
 import { processDrops } from './monitor.js';
 import { evaluateRealDeals } from './scraper.js';
+import { maybeBackfill } from './historyBackfill.js';
 
 let current = null;
 
@@ -62,6 +63,7 @@ async function execute(trigger) {
 
   const merged = mergeProducts(products, startedAt);
   recordHistory(products, startedAt);
+  maybeBackfill();
   const removed = pruneStale(startedAt);
   pruneAlerts();
 

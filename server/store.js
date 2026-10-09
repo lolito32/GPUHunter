@@ -145,6 +145,32 @@ export function recordHistory(list, seenAt = Date.now()) {
   return touched;
 }
 
+export function seedHistory(entries) {
+  if (!entries || typeof entries !== 'object') return 0;
+  let added = 0;
+  for (const [gpu, series] of Object.entries(entries)) {
+    if (!gpu || !Array.isArray(series) || !series.length) continue;
+    const merged = new Map();
+    const existing = Array.isArray(history[gpu]) ? history[gpu] : [];
+    for (const pt of existing) {
+      if (pt && pt.d) merged.set(pt.d, Number(pt.p));
+    }
+    for (const pt of series) {
+      if (!pt || !pt.d || !Number.isFinite(Number(pt.p))) continue;
+      if (!merged.has(pt.d)) {
+        merged.set(pt.d, Number(pt.p));
+        added++;
+      }
+    }
+    const arr = [...merged.entries()]
+      .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+      .map(([d, p]) => ({ d, p }));
+    history[gpu] = arr.slice(-HISTORY_MAX_POINTS);
+  }
+  historyDirty = true;
+  return added;
+}
+
 export function setTargets(next) {
   data.targets = { ...DEFAULT_TARGETS, ...next };
   scheduleSave();

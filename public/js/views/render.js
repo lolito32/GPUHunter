@@ -4,7 +4,7 @@ import { esc, money, timeAgo } from '../utils/format.js';
 import { store } from '../utils/store.js';
 import { state } from '../state/state.js';
 import { api, apiBase, adminToken, fetchHistory, DEFAULT_ADMIN } from '../services/api.js';
-import { sparkline } from '../components/chart.js';
+import { sparkline, mountCharts } from '../components/chart.js';
 import { getPush } from '../services/push.js';
 import { isNative } from '../services/update.js';
 
@@ -74,11 +74,23 @@ export function cardHtml(item) {
       '" alt="" width="62" height="62" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">'
     : '';
   const hist = state.history && state.history[item.gp];
-  const trend = hist && hist.length
-    ? '<details class="spark"><summary>Historial de precios · ' +
-      (hist.length === 1 ? '1 registro' : hist.length + ' registros') +
-      '</summary>' + sparkline(hist) + '</details>'
-    : '';
+  let trend = '';
+  if (hist && hist.length) {
+    const body =
+      hist.length > 1
+        ? sparkline(hist, { gpu: item.gp })
+        : '<p class="spark-empty">Todavía no hay precios anteriores para este modelo. GPUHunter acaba de empezar a registrar su historial; el gráfico se irá completando con las próximas variaciones de precio.</p>';
+    const count = hist.length === 1 ? '1 registro' : hist.length + ' registros';
+    trend =
+      '<details class="spark">' +
+      '<summary class="spark-btn">' +
+      '<svg class="spark-ico" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 16l4-5 3 3 5-7 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' +
+      '<span class="spark-btn-text">Ver historial de precios</span>' +
+      '<span class="spark-count">' + esc(count) + '</span>' +
+      '</summary>' +
+      '<div class="spark-body">' + body + '</div>' +
+      '</details>';
+  }
   return (
     '<article class="row-item"><div class="row-main">' +
     thumb +
@@ -113,6 +125,7 @@ export function renderList(append) {
     while (wrapper.firstChild) frag.appendChild(wrapper.firstChild);
     if (append) list.appendChild(frag);
     else list.replaceChildren(frag);
+    mountCharts(list);
   }
   $('list-meta').textContent = state.total
     ? state.items.length + ' de ' + state.total + ' ofertas' + (state.meta ? ' · datos ' + timeAgo(state.meta.lastSync) : '')
