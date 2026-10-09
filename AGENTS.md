@@ -17,12 +17,17 @@ Monitor de precios de GPUs (tiendas argentinas): backend Node.js + PWA vanilla +
 - `server/services/scraper.js` + `server/scrapers/` — orquesta los 7 scrapers (fullhard, compragamer, gezatek, hardgamers, malditohard, mexx, venex). Selectores exactos viven en cada módulo; no rediseñar a ciegas. MalditoHard caído = 0 items, no rompe el ciclo.
 - `server/lib/http.js` — `curlGet` para FullH4rd (Cloudflare): omitir header `accept`, cae a `curl` del PATH (requisito también en Render).
 - `server/services/monitor.js` — ciclo de sync y disparo de alertas; `server/services/fcm.js` — push vía firebase-admin (canal `gpuhunter-alerts`, poda de tokens inválidos).
-- `public/app.js` — lógica PWA: hash routing, detección Capacitor, URL del servidor en `localStorage` (`gh_api`), restauración de targets si la API responde `fresh: 1`.
+- `public/app.js` — punto de entrada ultraliviano (ESM).
+- `public/js/api.js` — cliente HTTP (fetch a `/api/*`, `apiBase` desde `localStorage` `gh_api`).
+- `public/js/state.js` — estado cliente (productos, filtros, configuración, targets).
+- `public/js/ui.js` — renderizado, banners, In-App Update, detección Capacitor.
+- `public/js/events.js` — escuchadores de eventos.
 - `public/index.html` + `public/sw.js` — al tocar `public/*`: bump `?v=N` en index.html y de `SHELL`/`CACHE` en sw.js; luego `npx cap sync android`.
 - `data/db.json` — gitignored; `README.md` — documentación de usuario.
 
 ## 3. Reglas de Operación Estrictas para Agentes
 1. Imports relativos **siempre con extensión `.js`** (ESM).
-2. **Prohibido** `continue` dentro de callbacks o `forEach` (usar `for...of` o `return`).
-3. **Prohibido** ejecutar scripts de verificación en bucle continuo por consola.
-4. Validar sintaxis con `node --check <archivo>` **una sola vez** por archivo y finalizar la tarea.
+2. En cliente, imports siempre con extensión `.js` explícita (ej: `import { ... } from './js/api.js'`).
+3. **Prohibido** `continue` dentro de callbacks o `forEach` (usar `for...of` o `return`).
+4. **Prohibido** ejecutar scripts de verificación en bucle continuo por consola.
+5. Validar sintaxis con `node --check <archivo>` **una sola vez** por archivo y finalizar la tarea.
