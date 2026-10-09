@@ -73,7 +73,21 @@ export function renderFiltersCount() {
   el.classList.toggle('on', n > 0);
 }
 
-export function cardHtml(item) {
+let cardObserver = null;
+function getCardObserver() {
+  if (cardObserver) return cardObserver;
+  cardObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.05, rootMargin: '60px' });
+  return cardObserver;
+}
+
+export function cardHtml(item, index = 0) {
   const target = state.meta && state.meta.targets ? state.meta.targets[item.gp] : 0;
   const deal = item.tg === 1 || (target && item.pr <= target);
   let delta = '';
@@ -116,7 +130,7 @@ export function cardHtml(item) {
       '</details>';
   }
   return (
-    '<article class="row-item"><div class="row-main">' +
+    '<article class="row-item" style="--i: ' + index + '"><div class="row-main">' +
     thumb +
     '<div class="row-col">' +
     '<div class="row-top"><span class="store-pill">' + esc(storeName(item.st)) + '</span>' +
@@ -146,11 +160,23 @@ export function renderList(append) {
   } else {
     const frag = document.createDocumentFragment();
     const wrapper = document.createElement('div');
-    wrapper.innerHTML = items.map(cardHtml).join('');
+    wrapper.innerHTML = items.map((item, index) => cardHtml(item, index)).join('');
     while (wrapper.firstChild) frag.appendChild(wrapper.firstChild);
     if (append) list.appendChild(frag);
     else list.replaceChildren(frag);
     mountCharts(list);
+
+    const observer = getCardObserver();
+    list.querySelectorAll('.row-item:not(.visible)').forEach((el, idx) => {
+      if (idx < 8) {
+        requestAnimationFrame(() => {
+          el.style.transitionDelay = (idx * 0.05) + 's';
+          el.classList.add('visible');
+        });
+      } else {
+        observer.observe(el);
+      }
+    });
   }
   $('list-meta').textContent = state.total
     ? items.length + ' de ' + state.total + ' ofertas' + (state.meta ? ' · ' + (state.offline ? 'Offline (' + timeAgo(state.meta.lastSync) + ')' : 'Actualizado ' + timeAgo(state.meta.lastSync)) : '')

@@ -95,7 +95,23 @@ body {
 
 .icon-btn:hover { background: var(--chip); color: var(--text); }
 .icon-btn:active { background: var(--btn); }
-.icon-btn.busy svg { animation: spin 1.1s linear infinite; }
+.icon-btn.busy { position: relative; }
+.icon-btn.busy svg { animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+.icon-btn.busy::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 9px;
+  border: 1.5px solid var(--good);
+  opacity: 0.7;
+  animation: sync-pulse 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes sync-pulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 0.2; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .view {
@@ -104,6 +120,20 @@ body {
   max-width: 640px;
   margin: 0 auto;
   width: 100%;
+}
+
+.panel {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.panel.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+.panel.hidden {
+  display: none !important;
 }
 
 .toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
@@ -269,7 +299,34 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
   content-visibility: auto;
   contain-intrinsic-size: auto 118px;
-  transition: border-color .15s ease, transform .15s ease;
+  transition: border-color .15s ease, transform .3s ease, opacity .3s ease;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.row-item.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.row-item:hover {
+  border-color: var(--line-2);
+}
+
+.panel {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.panel.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.row-item.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .row-item:hover {
@@ -614,7 +671,25 @@ h2 {
   border-radius: var(--radius);
   background: var(--card);
   border: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
   animation: pulse 1.4s ease-in-out infinite;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.06),
+    transparent
+  );
+  animation: shimmer 1.6s infinite;
+}
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
 }
 
 @keyframes pulse { 50% { opacity: .55; } }
