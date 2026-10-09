@@ -4,9 +4,11 @@ import {
   getStatus,
   getTargets,
   mergeProducts,
+  fillMissingImages,
   recordHistory,
   pruneStale,
   pruneUnsupportedGpus,
+  pruneHistory,
   pruneAlerts,
   setStatus,
   flush
@@ -63,9 +65,11 @@ async function execute(trigger) {
   }
 
   const merged = mergeProducts(products, startedAt);
+  fillMissingImages();
   recordHistory(products, startedAt);
   maybeBackfill();
   const removed = pruneStale(startedAt) + pruneUnsupportedGpus(isSupportedGpu);
+  pruneHistory();
   pruneAlerts();
 
   const targets = getTargets();

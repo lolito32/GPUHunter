@@ -3,7 +3,8 @@ import {
   ADMIN_TOKEN,
   STORES,
   SYNC_INTERVAL_MIN,
-  MAX_PAGES
+  MAX_PAGES,
+  GPU_CATALOG
 } from './config.js';
 import {
   getAllProducts,
@@ -21,6 +22,7 @@ import { registerDevice, unregisterDevice, getDevices } from './store.js';
 import { isFcmConfigured, sendPushToDevices, sendPushToToken } from './services/fcm.js';
 
 const router = express.Router();
+const API_HISTORY_POINTS = 120;
 
 router.use((req, res, next) => {
   res.set('Access-Control-Allow-Origin', '*');
@@ -83,10 +85,16 @@ router.get('/meta', (_req, res) => {
 
   const status = getStatus();
   const gpus = [...gpuMap.values()];
-  for (const key of Object.keys(targets)) {
+  for (const key of GPU_CATALOG) {
     if (!gpuMap.has(key)) gpus.push({ k: key, l: labelForKey(key), n: 0 });
   }
-  gpus.sort((a, b) => b.n - a.n || a.l.localeCompare(b.l, 'es'));
+  for (const key of Object.keys(targets)) {
+    if (!gpuMap.has(key) && !GPU_CATALOG.includes(key)) gpus.push({ k: key, l: labelForKey(key), n: 0 });
+  }
+  const order = new Map(GPU_CATALOG.map((k, i) => [k, i]));
+  gpus.sort(
+    (a, b) => b.n - a.n || (order.get(a.k) ?? 9999) - (order.get(b.k) ?? 9999) || a.l.localeCompare(b.l, 'es')
+  );
 
   res.set('Cache-Control', 'no-store');
   res.json({
@@ -142,13 +150,16 @@ router.get('/products', (req, res) => {
   const total = list.length;
   const start = (page - 1) * limit;
   const slice = list.slice(start, start + limit);
+  const history = getHistory();
   const items = slice.map((p) => {
-    const item = { st: p.store, nm: p.name, gp: p.gpu, pr: p.price, ur: p.url };
+    const item = { id: p.id, st: p.store, nm: p.name, gp: p.gpu, pr: p.price, ur: p.url };
     if (p.image) item.im = p.image;
     if (p.prevPrice && p.prevPrice !== p.price) item.dl = p.price - p.prevPrice;
     if (p.source) item.sc = p.source;
     if (p.used) item.us = 1;
     if (targets[p.gpu] && p.price <= targets[p.gpu]) item.tg = 1;
+    const series = history[p.id];
+    if (Array.isArray(series) && series.length) item.hs = series.slice(-API_HISTORY_POINTS);
     return item;
   });
 

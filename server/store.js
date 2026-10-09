@@ -123,26 +123,46 @@ export const getHistory = () => history;
 
 export function recordHistory(list, seenAt = Date.now()) {
   const day = new Date(seenAt).toISOString().slice(0, 10);
-  const best = new Map();
-  for (const item of list) {
-    if (!item || !item.gpu || !item.price || item.price <= 0) continue;
-    const current = best.get(item.gpu);
-    if (current === undefined || item.price < current) best.set(item.gpu, item.price);
-  }
   let touched = false;
-  for (const [gpu, price] of best) {
-    const arr = Array.isArray(history[gpu]) ? history[gpu] : [];
+  for (const item of list) {
+    if (!item || !item.id || !item.price || item.price <= 0) continue;
+    const arr = Array.isArray(history[item.id]) ? history[item.id] : [];
     const last = arr[arr.length - 1];
-    if (last && last.p === price) continue;
-    arr.push({ d: day, p: price });
-    history[gpu] = arr.length > HISTORY_MAX_POINTS ? arr.slice(-HISTORY_MAX_POINTS) : arr;
-    touched = true;
+    let changed = false;
+    if (last && last.d === day) {
+      if (last.p !== item.price) {
+        arr[arr.length - 1] = { d: day, p: item.price };
+        changed = true;
+      }
+    } else if (!last || last.p !== item.price) {
+      arr.push({ d: day, p: item.price });
+      changed = true;
+    }
+    if (changed) {
+      history[item.id] = arr.length > HISTORY_MAX_POINTS ? arr.slice(-HISTORY_MAX_POINTS) : arr;
+      touched = true;
+    }
   }
   if (touched) {
     historyDirty = true;
     scheduleSave();
   }
   return touched;
+}
+
+export function pruneHistory() {
+  let removed = 0;
+  for (const key of Object.keys(history)) {
+    if (!data.products[key]) {
+      delete history[key];
+      removed++;
+    }
+  }
+  if (removed) {
+    historyDirty = true;
+    scheduleSave();
+  }
+  return removed;
 }
 
 export function seedHistory(entries) {
@@ -297,7 +317,10 @@ export function mergeProducts(list, seenAt = Date.now()) {
     existing.gpu = item.gpu;
     existing.source = item.source || '';
     existing.used = item.used ? 1 : 0;
-    if (item.image) existing.image = item.image;
+    if (item.image) {
+      existing.image = item.image;
+      existing.imageBorrowed = 0;
+    }
     if (item.price !== before) {
       existing.prevPrice = before;
       existing.price = item.price;
@@ -310,6 +333,76 @@ export function mergeProducts(list, seenAt = Date.now()) {
     }
   }
   return { added, changed, drops, addedProducts, total: list.length };
+}
+
+const IMG_STOP = new Set([
+  'placa', 'placas', 'de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'con', 'para',
+  'video', 'tarjeta', 'tarjetas', 'grafica', 'graficas', 'gpu', 'graficos',
+  'geforce', 'radeon', 'nvidia', 'amd', 'intel', 'gb', 'memoria', 'pcie'
+]);
+
+function imageSignature(name) {
+  const seen = new Set();
+  const text = String(name || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ');
+  for (const token of text.split(' ')) {
+    if (!token || IMG_STOP.has(token)) continue;
+    if (/^\d{1,2}$/.test(token) || /^\d+gb$/.test(token) || /^gddr\d*x?$/.test(token)) continue;
+    seen.add(token);
+  }
+  return [...seen].sort();
+}
+
+function similarity(a, b) {
+  if (!a.length || !b.length) return 0;
+  const setB = new Set(b);
+  let inter = 0;
+  for (const token of a) if (setB.has(token)) inter++;
+  const union = new Set([...a, ...b]).size;
+  return union ? inter / union : 0;
+}
+
+export function fillMissingImages() {
+  const products = Object.values(data.products);
+  const index = new Map();
+  for (const product of products) {
+    if (!product || !product.image || product.imageBorrowed || !product.gpu) continue;
+    const sig = imageSignature(product.name);
+    if (!sig.length) continue;
+    const arr = index.get(product.gpu) || [];
+    arr.push({ sig, image: product.image, store: product.store });
+    index.set(product.gpu, arr);
+  }
+  if (!index.size) return 0;
+
+  let filled = 0;
+  for (const product of products) {
+    if (!product || product.image || !product.gpu) continue;
+    const candidates = index.get(product.gpu);
+    if (!candidates) continue;
+    const sig = imageSignature(product.name);
+    if (!sig.length) continue;
+    let best = null;
+    let bestScore = 0.7;
+    for (const candidate of candidates) {
+      if (candidate.store === product.store) continue;
+      const score = similarity(sig, candidate.sig);
+      if (score > bestScore) {
+        bestScore = score;
+        best = candidate;
+      }
+    }
+    if (best) {
+      product.image = best.image;
+      product.imageBorrowed = 1;
+      filled++;
+    }
+  }
+  if (filled) scheduleSave();
+  return filled;
 }
 
 export function pruneStale(now = Date.now()) {

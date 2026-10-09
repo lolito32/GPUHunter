@@ -6,11 +6,26 @@ import fullhard from './fullhard.js';
 import malditohard from './malditohard.js';
 import tech710 from './710tech.js';
 import maximus from './maximus.js';
+import pchardware from './pchardware.js';
+import computienda from './computienda.js';
+import tecnobytes from './tecnobytes.js';
 import hardgamers from './hardgamers.js';
 import { SCRAP_TIMEOUT_MS } from '../config.js';
 import { delay } from '../lib/http.js';
 
-export const SCRAPERS = [compragamer, mexx, venex, gezatek, fullhard, malditohard, tech710, maximus];
+export const SCRAPERS = [
+  compragamer,
+  mexx,
+  venex,
+  gezatek,
+  fullhard,
+  malditohard,
+  tech710,
+  maximus,
+  pchardware,
+  computienda,
+  tecnobytes
+];
 
 const withTimeout = (promise, ms, label) =>
   new Promise((resolve, reject) => {

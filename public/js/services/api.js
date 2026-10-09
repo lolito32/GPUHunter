@@ -16,10 +16,6 @@ export function adminToken() {
   return store.get('admin', '') || DEFAULT_ADMIN;
 }
 
-export async function fetchHistory() {
-  return api('/history');
-}
-
 export async function api(path, options = {}) {
   const headers = { ...(options.headers || {}) };
   const token = adminToken();

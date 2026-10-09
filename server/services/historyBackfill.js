@@ -1,10 +1,7 @@
-import * as cheerio from 'cheerio';
 import { getText, delay } from '../lib/http.js';
-import { detectGpu, labelForKey } from '../gpu.js';
 import { getAllProducts, getHistory, seedHistory, flush } from '../store.js';
 
 const SEARCH = 'https://www.hardgamers.com.ar/search?category=placas-de-video';
-const ORIGIN = 'https://www.hardgamers.com.ar';
 const CHART_RE = /var\s+chartConfig\s*=\s*(\{[\s\S]*?\});/;
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -62,40 +59,6 @@ function parseChart(html) {
   }
 }
 
-function urlsFromDb(wanted) {
-  const map = new Map();
-  for (const product of Object.values(getAllProducts())) {
-    if (!product || product.store !== 'hardgamers' || !product.gpu || !product.url) continue;
-    if (wanted.has(product.gpu) && !map.has(product.gpu)) map.set(product.gpu, product.url);
-  }
-  return map;
-}
-
-async function findProductUrl(gpu) {
-  const text = labelForKey(gpu);
-  if (!text) return null;
-  const url = SEARCH + '&text=' + encodeURIComponent(text);
-  try {
-    const html = await getText(url, { headers: { referer: ORIGIN + '/' } });
-    const $ = cheerio.load(html);
-    let found = null;
-    $('article.One-Bit-Product').each((_, el) => {
-      if (found) return;
-      const card = $(el);
-      const name = card.find('.product-name').first().text().trim();
-      const href = card.find('a[href*="/product/"]').first().attr('href') || '';
-      if (!name || !href) return;
-      const gpuMatch = detectGpu(name);
-      if (gpuMatch && gpuMatch.key === gpu) {
-        found = href.startsWith('http') ? href : ORIGIN + href;
-      }
-    });
-    return found;
-  } catch {
-    return null;
-  }
-}
-
 async function pooled(jobs, concurrency) {
   const results = [];
   let cursor = 0;
@@ -116,46 +79,42 @@ export async function backfillHistory({ maxModels = 30, concurrency = 1 } = {}) 
   for (const product of products) {
     if (product && product.gpu) frequency.set(product.gpu, (frequency.get(product.gpu) || 0) + 1);
   }
-  const wanted = new Set(
-    [...frequency.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, maxModels)
-      .map(([gpu]) => gpu)
-  );
-  if (!wanted.size) return { entries: {}, models: 0, points: 0, reason: 'sin productos' };
+  const wanted = [...frequency.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, maxModels)
+    .map(([gpu]) => gpu);
+  if (!wanted.length) return { entries: {}, models: 0, points: 0, reason: 'sin productos' };
 
-  const urls = urlsFromDb(wanted);
-  const missing = [...wanted].filter((gpu) => !urls.has(gpu));
-  const searched = await pooled(
-    missing.map((gpu) => async () => {
-      const url = await findProductUrl(gpu);
-      await delay(1500 + Math.random() * 600);
-      return { gpu, url };
-    }),
-    concurrency
-  );
-  for (const { gpu, url } of searched) {
-    if (url) urls.set(gpu, url);
+  const reps = new Map();
+  for (const product of products) {
+    if (!product || product.store !== 'hardgamers' || !product.gpu || !product.url) continue;
+    if (!reps.has(product.gpu)) reps.set(product.gpu, product);
   }
 
-  const targets = [...urls.entries()];
-  const jobs = targets.map(([gpu, url]) => async () => {
+  const targets = [];
+  for (const gpu of wanted) {
+    const rep = reps.get(gpu);
+    if (rep) targets.push({ id: rep.id, url: rep.url });
+  }
+  if (!targets.length) return { entries: {}, models: 0, points: 0, reason: 'sin urls' };
+
+  const jobs = targets.map(({ id, url }) => async () => {
     try {
       const html = await getText(url, { headers: { referer: SEARCH } });
       const series = parseChart(html);
       await delay(1500 + Math.random() * 600);
-      return { gpu, series };
+      return { id, series };
     } catch {
-      return { gpu, series: [] };
+      return { id, series: [] };
     }
   });
 
   const results = await pooled(jobs, concurrency);
   const entries = {};
   let points = 0;
-  for (const { gpu, series } of results) {
+  for (const { id, series } of results) {
     if (series && series.length) {
-      entries[gpu] = series;
+      entries[id] = series;
       points += series.length;
     }
   }

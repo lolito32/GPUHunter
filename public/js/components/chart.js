@@ -93,7 +93,7 @@ export function sparkline(history, options = {}) {
 
   return (
     '<svg class="sparkline" viewBox="0 0 ' + VB_W + ' ' + VB_H + '" preserveAspectRatio="xMidYMid meet" ' +
-    'role="img" aria-label="Gráfico de evolución de precio" data-gpu="' + esc(options.gpu || '') + '" ' +
+    'role="img" aria-label="Gráfico de evolución de precio" data-key="' + esc(options.key || '') + '" ' +
     'data-vw="' + VB_W + '" data-left="' + M.left + '" data-right="' + (M.left + innerW) + '" ' +
     'data-top="' + M.top + '" data-bottom="' + (M.top + innerH) + '" ' +
     'data-coords="' + coords.map((c) => c.join(',')).join(';') + '">' +
@@ -133,7 +133,7 @@ function bindChart(svg) {
     .filter((pair) => pair.length === 2 && pair.every(Number.isFinite));
   if (!coords.length) return;
 
-  const gpu = svg.dataset.gpu || '';
+  const key = svg.dataset.key || '';
   const right = Number(svg.dataset.right);
   const top = Number(svg.dataset.top);
   const bottom = Number(svg.dataset.bottom);
@@ -149,7 +149,7 @@ function bindChart(svg) {
   let hideTimer = null;
 
   const points = () => {
-    const hist = state.history && state.history[gpu];
+    const hist = state.history && state.history[key];
     const arr = sanitize(hist);
     return arr.length >= coords.length ? arr : null;
   };

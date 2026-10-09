@@ -156,6 +156,8 @@ body {
 }
 
 .chip .n { opacity: .55; font-weight: 400; }
+.chip.zero { opacity: .5; }
+.chip.zero.on { opacity: 1; }
 
 .filters {
   margin-bottom: 10px;

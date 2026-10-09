@@ -3,7 +3,7 @@ import { $ } from '../utils/dom.js';
 import { esc, money, timeAgo } from '../utils/format.js';
 import { store } from '../utils/store.js';
 import { state } from '../state/state.js';
-import { api, apiBase, adminToken, fetchHistory, DEFAULT_ADMIN } from '../services/api.js';
+import { api, apiBase, adminToken, DEFAULT_ADMIN } from '../services/api.js';
 import { sparkline, mountCharts } from '../components/chart.js';
 import { getPush } from '../services/push.js';
 import { isNative } from '../services/update.js';
@@ -29,11 +29,11 @@ export function renderChips() {
   ];
   $('chips-status').innerHTML = statusHtml.join('');
 
-  const gpus = m.gpus.slice(0, 18);
+  const gpus = m.gpus;
   const gpuHtml = ['<button class="chip' + (state.gpu === '' ? ' on' : '') + '" data-gpu="">Todas <span class="n">' + m.total + '</span></button>'];
   for (const g of gpus) {
     gpuHtml.push(
-      '<button class="chip' + (state.gpu === g.k ? ' on' : '') + '" data-gpu="' + esc(g.k) + '">' + esc(g.l) +
+      '<button class="chip' + (state.gpu === g.k ? ' on' : '') + (g.n ? '' : ' zero') + '" data-gpu="' + esc(g.k) + '">' + esc(g.l) +
         ' <span class="n">' + g.n + '</span></button>'
     );
   }
@@ -88,13 +88,13 @@ export function cardHtml(item) {
       esc(item.im) +
       '" alt="" width="62" height="62" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">'
     : '';
-  const hist = state.history && state.history[item.gp];
+  const hist = state.history && state.history[item.id];
   let trend = '';
   if (hist && hist.length) {
     const body =
       hist.length > 1
-        ? sparkline(hist, { gpu: item.gp })
-        : '<p class="spark-empty">Todavía no hay precios anteriores para este modelo. GPUHunter acaba de empezar a registrar su historial; el gráfico se irá completando con las próximas variaciones de precio.</p>';
+        ? sparkline(hist, { key: item.id })
+        : '<p class="spark-empty">Todavía no hay precios anteriores para esta oferta. GPUHunter acaba de empezar a registrar su historial; el gráfico se irá completando con las próximas variaciones de precio.</p>';
     const count = hist.length === 1 ? '1 registro' : hist.length + ' registros';
     trend =
       '<details class="spark">' +
@@ -171,11 +171,10 @@ export async function load(page) {
     $('btn-more').classList.add('hidden');
   }
   try {
-    const [data, hist] = await Promise.all([
-      api('/products?' + query({ page }), { initial: page === 1 }),
-      page === 1 ? fetchHistory().catch(() => null) : null
-    ]);
-    if (hist) state.history = hist;
+    const data = await api('/products?' + query({ page }), { initial: page === 1 });
+    for (const item of data.items) {
+      if (item.hs) state.history[item.id] = item.hs;
+    }
     state.page = data.page;
     state.pages = data.pages;
     state.total = data.total;

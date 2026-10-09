@@ -22,6 +22,19 @@ export const USER_AGENT =
 
 export const GPU_SUBCATEGORIES = new Set([6, 62, 116]);
 
+export const GPU_CATALOG = [
+  'gtx-1050-ti', 'gtx-1060', 'gtx-1650', 'gtx-1650-super', 'gtx-1660', 'gtx-1660-super', 'gtx-1660-ti',
+  'rtx-2060', 'rtx-2060-super', 'rtx-2070', 'rtx-2070-super', 'rtx-2080', 'rtx-2080-super', 'rtx-2080-ti',
+  'rtx-3050', 'rtx-3060', 'rtx-3060-ti', 'rtx-3070', 'rtx-3070-ti', 'rtx-3080', 'rtx-3080-ti', 'rtx-3090', 'rtx-3090-ti',
+  'rtx-4060', 'rtx-4060-ti', 'rtx-4070', 'rtx-4070-super', 'rtx-4070-ti', 'rtx-4080', 'rtx-4080-super', 'rtx-4090',
+  'rtx-5050', 'rtx-5060', 'rtx-5060-ti', 'rtx-5070', 'rtx-5070-ti', 'rtx-5080', 'rtx-5090',
+  'rx-570', 'rx-580', 'rx-590', 'rx-5500-xt', 'rx-5600-xt', 'rx-5700', 'rx-5700-xt', 'rx-6400', 'rx-6500-xt',
+  'rx-6600', 'rx-6600-xt', 'rx-6650-xt', 'rx-6700', 'rx-6700-xt', 'rx-6750-xt', 'rx-6800', 'rx-6800-xt',
+  'rx-6900-xt', 'rx-6950-xt', 'rx-7600', 'rx-7600-xt', 'rx-7700-xt', 'rx-7800-xt', 'rx-7900-xt', 'rx-7900-xtx',
+  'rx-9060', 'rx-9060-xt', 'rx-9070', 'rx-9070-xt',
+  'arc-a380', 'arc-a580', 'arc-a750', 'arc-a770', 'arc-b570', 'arc-b580'
+];
+
 export const STORES = [
   { key: 'compragamer', name: 'CompraGamer', url: 'https://www.compragamer.com', direct: true },
   { key: 'mexx', name: 'Mexx', url: 'https://www.mexx.com.ar', direct: true },
@@ -31,6 +44,9 @@ export const STORES = [
   { key: 'malditohard', name: 'MalditoHard', url: 'https://www.malditohard.com.ar', direct: true },
   { key: '710tech', name: '710tech', url: 'https://710tech.com.ar', direct: true },
   { key: 'maximus', name: 'Maximus Gaming Hardware', url: 'https://www.maximus.com.ar', direct: true },
+  { key: 'pchardware', name: 'PC Hardware', url: 'https://www.pchardwareonline.com.ar', direct: true },
+  { key: 'computienda', name: 'Computienda', url: 'https://www.computienda.com.ar', direct: true },
+  { key: 'tecnobytes', name: 'Tecnobytes', url: 'https://www.tecnobytestore.com.ar', direct: true },
   { key: 'hardgamers', name: 'HardGamers', url: 'https://www.hardgamers.com.ar', direct: false }
 ];
 
