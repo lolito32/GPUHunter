@@ -186,11 +186,15 @@
       const v = await api('/app/version');
       const latest = v && v.latestVersion;
       const apkUrl = v && v.apkUrl;
-      const local = store.get('app_version') || '1.0.0';
+      let local = store.get('app_version');
+      if (!local) {
+        local = '1.0.0';
+        store.set('app_version', local);
+      }
       console.log('[UpdateCheck]', { local, latest, apkUrl, native: isNative() });
       if (!latest || !apkUrl) return;
       if (compareVersions(latest, local) > 0) {
-        updateBannerShown = true;
+        updateBannerShown = false;
         showUpdateBanner(latest, apkUrl);
       }
     } catch (err) {
@@ -224,28 +228,27 @@
     el.style.top = '0';
     el.style.left = '0';
     el.style.right = '0';
-    el.style.zIndex = '9999';
+    el.style.zIndex = '2147483647';
     el.style.background = '#ff9f0a';
     el.style.color = '#1b1b1f';
-    el.style.padding = '10px 14px';
-    el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
-    el.style.fontSize = '14px';
+    el.style.padding = '12px 16px';
+    el.style.boxShadow = '0 4px 10px rgba(0,0,0,0.4)';
+    el.style.fontSize = '15px';
     el.style.display = 'flex';
     el.style.flexDirection = 'column';
-    el.style.gap = '6px';
+    el.style.gap = '8px';
     document.body.prepend(el);
     el.innerHTML =
       '<div style="font-weight:bold">Nueva versión disponible (v' + esc(version) + ')</div>' +
-      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
-      '<button class="btn" id="update-btn-update" style="background:#fff">Actualizar / Descargar APK</button>' +
-      '<button class="btn" id="update-btn-close" style="background:transparent;border:1px solid rgba(0,0,0,0.2)">Cerrar</button>' +
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+      '<button class="btn" id="update-btn-update" style="background:#fff;color:#1b1b1f;padding:8px 10px">Actualizar / Descargar APK</button>' +
+      '<button class="btn" id="update-btn-close" style="background:transparent;border:1px solid rgba(0,0,0,0.4);color:#1b1b1f;padding:8px 10px">Cerrar</button>' +
       '</div>';
-    el.classList.add('on');
     const btnUpdate = document.getElementById('update-btn-update');
     const btnClose = document.getElementById('update-btn-close');
     if (btnUpdate) {
       btnUpdate.addEventListener('click', () => {
-        window.open(apkUrl, '_blank');
+        window.open(apkUrl, '_blank', 'noopener');
       });
     }
     if (btnClose) {
@@ -253,7 +256,6 @@
         if (el && el.parentNode) el.parentNode.removeChild(el);
       });
     }
-    if (showUpdateBanner._t) clearTimeout(showUpdateBanner._t);
   }
 
   let pushListenersReady = false;
