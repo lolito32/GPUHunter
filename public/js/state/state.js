@@ -8,6 +8,8 @@ export const state = {
   deal: store.get('deal', false),
   used: store.get('used', false),
   sort: store.get('sort', 'price-asc'),
+  minPrice: store.get('minPrice', 0),
+  maxPrice: store.get('maxPrice', 0),
   q: '',
   items: [],
   history: {},

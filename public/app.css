@@ -157,6 +157,93 @@ body {
 
 .chip .n { opacity: .55; font-weight: 400; }
 
+.filters {
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  overflow: hidden;
+}
+
+.filters-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.filters-btn::-webkit-details-marker { display: none; }
+.filters-btn svg { color: var(--muted); }
+.filters-text { flex: 1; }
+
+.filters-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.filters-count.on {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.filters[open] .filters-btn { border-bottom: 1px solid var(--line); }
+.filters-panel { padding: 2px 14px 14px; }
+
+.filter-group { margin-top: 14px; }
+
+.filter-label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--faint);
+  margin-bottom: 8px;
+}
+
+.price-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.price-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: 14px;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+}
+
+.price-input:focus { outline: none; border-color: #45474c; }
+.price-input::-webkit-outer-spin-button,
+.price-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.price-input[type="number"] { -moz-appearance: textfield; }
+
+.range-sep { color: var(--faint); font-size: 12px; }
+
 .meta-line {
   font-size: 11.5px;
   color: var(--faint);

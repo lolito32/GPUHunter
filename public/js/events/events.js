@@ -83,15 +83,22 @@ async function startOnboarding() {
 }
 
 export function setupEvents() {
-  $('chips-gpu').addEventListener('click', (e) => {
-    const chip = e.target.closest('[data-gpu], [data-deal], [data-used]');
+  $('chips-status').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-deal], [data-used]');
     if (!chip) return;
     if (chip.dataset.deal) state.deal = !state.deal;
     else if (chip.dataset.used) state.used = !state.used;
-    else state.gpu = chip.dataset.gpu;
-    store.set('gpu', state.gpu);
     store.set('deal', state.deal);
     store.set('used', state.used);
+    renderChips();
+    load(1);
+  });
+
+  $('chips-gpu').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-gpu]');
+    if (!chip) return;
+    state.gpu = chip.dataset.gpu;
+    store.set('gpu', state.gpu);
     renderChips();
     load(1);
   });
@@ -112,6 +119,27 @@ export function setupEvents() {
       load(1);
     }, 260)
   );
+
+  const applyPrice = () => {
+    const min = Number($('price-min').value);
+    const max = Number($('price-max').value);
+    state.minPrice = Number.isFinite(min) && min > 0 ? Math.round(min) : 0;
+    state.maxPrice = Number.isFinite(max) && max > 0 ? Math.round(max) : 0;
+    store.set('minPrice', state.minPrice);
+    store.set('maxPrice', state.maxPrice);
+    renderChips();
+    load(1);
+  };
+
+  $('price-apply').addEventListener('click', applyPrice);
+  for (const id of ['price-min', 'price-max']) {
+    $(id).addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        applyPrice();
+      }
+    });
+  }
 
   $('sort').value = state.sort;
   $('sort').addEventListener('change', (e) => {

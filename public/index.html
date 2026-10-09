@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="app.css?v=1791628000">
+<link rel="stylesheet" href="app.css?v=1791716000">
 </head>
 <body>
 <header class="top">
@@ -31,8 +31,37 @@
         <option value="name">Nombre</option>
       </select>
     </div>
-    <div class="chips" id="chips-gpu" aria-label="Filtrar por GPU"></div>
-    <div class="chips" id="chips-store" aria-label="Filtrar por tienda"></div>
+    <details class="filters" id="filters">
+      <summary class="filters-btn">
+        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span class="filters-text">Filtros</span>
+        <span class="filters-count" id="filters-count">0</span>
+      </summary>
+      <div class="filters-panel">
+        <div class="filter-group">
+          <span class="filter-label">Estado</span>
+          <div class="chips" id="chips-status"></div>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Precio (ARS)</span>
+          <div class="price-range">
+            <input id="price-min" class="price-input" type="number" min="0" step="1000" inputmode="numeric" placeholder="Mínimo">
+            <span class="range-sep">a</span>
+            <input id="price-max" class="price-input" type="number" min="0" step="1000" inputmode="numeric" placeholder="Máximo">
+            <button id="price-apply" class="btn small" type="button">Aplicar</button>
+          </div>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Modelo</span>
+          <div class="chips" id="chips-gpu" aria-label="Filtrar por GPU"></div>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Tienda</span>
+          <div class="chips" id="chips-store" aria-label="Filtrar por tienda"></div>
+        </div>
+      </div>
+    </details>
+
     <div class="meta-line" id="list-meta"></div>
     <div id="list" class="list"></div>
     <div class="center">
@@ -123,6 +152,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js?v=1791628060"></script>
+<script type="module" src="app.js?v=1791716060"></script>
 </body>
 </html>

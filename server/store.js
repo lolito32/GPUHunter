@@ -323,6 +323,19 @@ export function pruneStale(now = Date.now()) {
   return removed;
 }
 
+export function pruneUnsupportedGpus(isSupported) {
+  if (typeof isSupported !== 'function') return 0;
+  let removed = 0;
+  for (const [id, product] of Object.entries(data.products)) {
+    if (!product || !isSupported(product.gpu)) {
+      delete data.products[id];
+      removed++;
+    }
+  }
+  if (removed) scheduleSave();
+  return removed;
+}
+
 export function setStatus(status) {
   data.status = { ...data.status, ...status };
   if (Array.isArray(data.status.runs)) {

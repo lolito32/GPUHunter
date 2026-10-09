@@ -6,11 +6,12 @@ import {
   mergeProducts,
   recordHistory,
   pruneStale,
+  pruneUnsupportedGpus,
   pruneAlerts,
   setStatus,
   flush
 } from '../store.js';
-import { detectGpu, looksLikeVideoCard } from '../gpu.js';
+import { detectGpu, looksLikeVideoCard, isSupportedGpu } from '../gpu.js';
 import { processDrops } from './monitor.js';
 import { evaluateRealDeals } from './scraper.js';
 import { maybeBackfill } from './historyBackfill.js';
@@ -64,7 +65,7 @@ async function execute(trigger) {
   const merged = mergeProducts(products, startedAt);
   recordHistory(products, startedAt);
   maybeBackfill();
-  const removed = pruneStale(startedAt);
+  const removed = pruneStale(startedAt) + pruneUnsupportedGpus(isSupportedGpu);
   pruneAlerts();
 
   const targets = getTargets();

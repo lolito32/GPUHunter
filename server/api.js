@@ -123,6 +123,8 @@ router.get('/products', (req, res) => {
   const sort = ['price-asc', 'price-desc', 'name'].includes(req.query.sort) ? req.query.sort : 'price-asc';
   const targets = getTargets();
   const needle = normalize(q);
+  const minPrice = optionalNumber(req.query.min, 0);
+  const maxPrice = optionalNumber(req.query.max, 0);
 
   let list = Object.values(getAllProducts());
   if (gpu) list = list.filter((p) => p.gpu === gpu);
@@ -130,6 +132,8 @@ router.get('/products', (req, res) => {
   if (needle) list = list.filter((p) => normalize(p.name).includes(needle));
   if (deal === '1') list = list.filter((p) => targets[p.gpu] && p.price <= targets[p.gpu]);
   if (used === '1') list = list.filter((p) => p.used);
+  if (minPrice !== null) list = list.filter((p) => p.price >= minPrice);
+  if (maxPrice !== null) list = list.filter((p) => p.price <= maxPrice);
 
   if (sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name, 'es'));
   else if (sort === 'price-desc') list.sort((a, b) => b.price - a.price);
@@ -357,6 +361,13 @@ function clamp(value, fallback, min, max) {
   const n = Number(value);
   if (!Number.isFinite(n)) return fallback;
   return Math.min(max, Math.max(min, Math.round(n)));
+}
+
+function optionalNumber(value, min = 0) {
+  if (value === undefined || value === null || value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < min) return null;
+  return Math.round(n);
 }
 
 export default router;

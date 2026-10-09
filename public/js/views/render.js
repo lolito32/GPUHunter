@@ -22,18 +22,15 @@ export function renderStatus() {
 export function renderChips() {
   const m = state.meta;
   if (!m) return;
+
+  const statusHtml = [
+    '<button class="chip' + (state.deal ? ' on' : '') + '" data-deal="1">Bajo objetivo <span class="n">' + (m.underTarget || 0) + '</span></button>',
+    '<button class="chip' + (state.used ? ' on' : '') + '" data-used="1">Usadas <span class="n">' + (m.usedCount || 0) + '</span></button>'
+  ];
+  $('chips-status').innerHTML = statusHtml.join('');
+
   const gpus = m.gpus.slice(0, 18);
   const gpuHtml = ['<button class="chip' + (state.gpu === '' ? ' on' : '') + '" data-gpu="">Todas <span class="n">' + m.total + '</span></button>'];
-  if (state.deal) {
-    gpuHtml.push('<button class="chip on" data-deal="1">Bajo objetivo <span class="n">' + m.underTarget + '</span></button>');
-  } else {
-    gpuHtml.push('<button class="chip" data-deal="1">Bajo objetivo <span class="n">' + m.underTarget + '</span></button>');
-  }
-  if (state.used) {
-    gpuHtml.push('<button class="chip on" data-used="1">Usadas <span class="n">' + (m.usedCount || 0) + '</span></button>');
-  } else {
-    gpuHtml.push('<button class="chip" data-used="1">Usadas <span class="n">' + (m.usedCount || 0) + '</span></button>');
-  }
   for (const g of gpus) {
     gpuHtml.push(
       '<button class="chip' + (state.gpu === g.k ? ' on' : '') + '" data-gpu="' + esc(g.k) + '">' + esc(g.l) +
@@ -43,14 +40,32 @@ export function renderChips() {
   $('chips-gpu').innerHTML = gpuHtml.join('');
 
   const stores = m.stores.filter((s) => s.on !== false && s.count > 0);
-  const html = ['<button class="chip' + (state.storeKey === '' ? ' on' : '') + '" data-store="">Todas las tiendas</button>'];
+  const storeHtml = ['<button class="chip' + (state.storeKey === '' ? ' on' : '') + '" data-store="">Todas las tiendas</button>'];
   for (const s of stores) {
-    html.push(
+    storeHtml.push(
       '<button class="chip' + (state.storeKey === s.k ? ' on' : '') + '" data-store="' + esc(s.k) + '">' +
         esc(s.n) + ' <span class="n">' + s.count + '</span></button>'
     );
   }
-  $('chips-store').innerHTML = html.join('');
+  $('chips-store').innerHTML = storeHtml.join('');
+
+  if ($('price-min')) $('price-min').value = state.minPrice || '';
+  if ($('price-max')) $('price-max').value = state.maxPrice || '';
+  renderFiltersCount();
+}
+
+export function renderFiltersCount() {
+  const el = $('filters-count');
+  if (!el) return;
+  let n = 0;
+  if (state.deal) n++;
+  if (state.used) n++;
+  if (state.gpu) n++;
+  if (state.storeKey) n++;
+  if (state.minPrice) n++;
+  if (state.maxPrice) n++;
+  el.textContent = String(n);
+  el.classList.toggle('on', n > 0);
 }
 
 export function cardHtml(item) {
@@ -142,6 +157,8 @@ export function query(extra) {
   if (state.deal) p.set('deal', '1');
   if (state.used) p.set('used', '1');
   if (state.q) p.set('q', state.q);
+  if (state.minPrice) p.set('min', String(state.minPrice));
+  if (state.maxPrice) p.set('max', String(state.maxPrice));
   if (extra && extra.page) p.set('page', String(extra.page));
   return p.toString();
 }
