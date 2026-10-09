@@ -2,11 +2,12 @@ import compragamer from './compragamer.js';
 import mexx from './mexx.js';
 import venex from './venex.js';
 import gezatek from './gezatek.js';
-import fullhard from './fullhard.js';
-import malditohard from './malditohard.js';
+// Deshabilitadas: dominios inactivos o inaccesibles (no consumen sync).
+// import fullhard from './fullhard.js'; // Cloudflare JS challenge (403)
+// import malditohard from './malditohard.js'; // dominio dado de baja (NXDOMAIN)
 import tech710 from './710tech.js';
 import maximus from './maximus.js';
-import pchardware from './pchardware.js';
+// import pchardware from './pchardware.js'; // precios solo por contacto
 import computienda from './computienda.js';
 import tecnobytes from './tecnobytes.js';
 import hardgamers from './hardgamers.js';
@@ -18,11 +19,11 @@ export const SCRAPERS = [
   mexx,
   venex,
   gezatek,
-  fullhard,
-  malditohard,
+  // fullhard, // Cloudflare JS challenge (403)
+  // malditohard, // dominio dado de baja (NXDOMAIN)
   tech710,
   maximus,
-  pchardware,
+  // pchardware, // precios solo por contacto
   computienda,
   tecnobytes
 ];

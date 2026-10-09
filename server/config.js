@@ -40,11 +40,11 @@ export const STORES = [
   { key: 'mexx', name: 'Mexx', url: 'https://www.mexx.com.ar', direct: true },
   { key: 'venex', name: 'Venex', url: 'https://www.venex.com.ar', direct: true },
   { key: 'gezatek', name: 'Gezatek', url: 'https://gezatek.com.ar', direct: true },
-  { key: 'fullhard', name: 'FullH4rd', url: 'https://fullh4rd.com.ar', direct: true },
-  { key: 'malditohard', name: 'MalditoHard', url: 'https://www.malditohard.com.ar', direct: true },
+  // { key: 'fullhard', name: 'FullH4rd', url: 'https://fullh4rd.com.ar', direct: true }, // Cloudflare JS challenge (403)
+  // { key: 'malditohard', name: 'MalditoHard', url: 'https://www.malditohard.com.ar', direct: true }, // dominio dado de baja (NXDOMAIN)
   { key: '710tech', name: '710tech', url: 'https://710tech.com.ar', direct: true },
   { key: 'maximus', name: 'Maximus Gaming Hardware', url: 'https://www.maximus.com.ar', direct: true },
-  { key: 'pchardware', name: 'PC Hardware', url: 'https://www.pchardwareonline.com.ar', direct: true },
+  // { key: 'pchardware', name: 'PC Hardware', url: 'https://www.pchardwareonline.com.ar', direct: true }, // precios solo por contacto
   { key: 'computienda', name: 'Computienda', url: 'https://www.computienda.com.ar', direct: true },
   { key: 'tecnobytes', name: 'Tecnobytes', url: 'https://www.tecnobytestore.com.ar', direct: true },
   { key: 'hardgamers', name: 'HardGamers', url: 'https://www.hardgamers.com.ar', direct: false }
