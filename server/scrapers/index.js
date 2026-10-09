@@ -4,11 +4,12 @@ import venex from './venex.js';
 import gezatek from './gezatek.js';
 import fullhard from './fullhard.js';
 import malditohard from './malditohard.js';
+import tech710 from './710tech.js';
 import hardgamers from './hardgamers.js';
 import { SCRAP_TIMEOUT_MS } from '../config.js';
 import { delay } from '../lib/http.js';
 
-export const SCRAPERS = [compragamer, mexx, venex, gezatek, fullhard, malditohard];
+export const SCRAPERS = [compragamer, mexx, venex, gezatek, fullhard, malditohard, tech710];
 
 const withTimeout = (promise, ms, label) =>
   new Promise((resolve, reject) => {

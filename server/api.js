@@ -138,6 +138,7 @@ router.get('/products', (req, res) => {
     if (p.image) item.im = p.image;
     if (p.prevPrice && p.prevPrice !== p.price) item.dl = p.price - p.prevPrice;
     if (p.source) item.sc = p.source;
+    if (p.used) item.us = 1;
     if (targets[p.gpu] && p.price <= targets[p.gpu]) item.tg = 1;
     return item;
   });

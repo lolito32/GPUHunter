@@ -24,7 +24,7 @@
 ## 3. FILE SYSTEM MAPPING
 ### Backend (`server/`)
 - `server/index.js`: Express bootstrap, SPA catch-all logic.
-- `server/api.js`: Routes `/api/*`. Payload keys: `st, nm, gp, pr, ur, im, dl, sc, tg`. CORS `Access-Control-Allow-Origin: *` is MANDATORY for Capacitor native WebView (`https://localhost`).
+- `server/api.js`: Routes `/api/*`. Payload keys: `st, nm, gp, pr, ur, im, dl, sc, tg, us` (`us: 1` = usada). CORS `Access-Control-Allow-Origin: *` is MANDATORY for Capacitor native WebView (`https://localhost`).
 - `server/store.js`: Atomic `data/db.json` writing (tmp+rename), deferred `scheduleSave` (~800ms). DO NOT read immediately after a PUT.
 - `server/services/scraper.js` & `server/scrapers/`: Scraper orchestration. Selectors are exact; DO NOT redesign blindly. Note: "MalditoHard" down = 0 items (this is expected, do not break the loop).
 - `server/lib/http.js`: `curlGet` for FullH4rd (Cloudflare bypass). Drops `accept` header, falls back to system `curl` in PATH.

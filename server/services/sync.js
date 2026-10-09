@@ -53,7 +53,8 @@ async function execute(trigger) {
         price: item.price,
         url: item.url,
         image: item.image || '',
-        source: item.source || ''
+        source: item.source || '',
+        used: item.us ? 1 : 0
       });
     }
   }

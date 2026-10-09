@@ -60,6 +60,7 @@ export function cardHtml(item) {
       '</span>';
   }
   const source = item.sc ? '<span class="via">via ' + esc(item.sc) + '</span>' : '';
+  const usedTag = item.us ? '<span class="used-tag">USADA</span>' : '';
   const tag = deal ? '<span class="deal-tag">bajo objetivo</span>' : '';
   const thumb = item.im
     ? '<img class="thumb" src="' +
@@ -71,7 +72,7 @@ export function cardHtml(item) {
     thumb +
     '<div class="row-col">' +
     '<div class="row-top"><span class="store-pill">' + esc(storeName(item.st)) + '</span>' +
-    source + tag + '</div>' +
+    usedTag + source + tag + '</div>' +
     '<h3 class="name">' + esc(item.nm) + '</h3>' +
     '<div class="row-bottom"><div class="price-wrap"><span class="price">' + money(item.pr) +
     '</span>' + delta + '</div>' +

@@ -196,6 +196,7 @@ export function mergeProducts(list, seenAt = Date.now()) {
         url: item.url,
         image: item.image || '',
         source: item.source || '',
+        used: item.used ? 1 : 0,
         updatedAt: seenAt,
         seenAt,
         history: [{ t: seenAt, p: item.price }]
@@ -211,6 +212,7 @@ export function mergeProducts(list, seenAt = Date.now()) {
     existing.url = item.url;
     existing.gpu = item.gpu;
     existing.source = item.source || '';
+    existing.used = item.used ? 1 : 0;
     if (item.image) existing.image = item.image;
     if (item.price !== before) {
       existing.prevPrice = before;
