@@ -105,15 +105,6 @@ export function setupEvents() {
     load(1);
   });
 
-  $('chips-gpu').addEventListener('click', (e) => {
-    const chip = e.target.closest('[data-gpu]');
-    if (!chip) return;
-    state.gpu = chip.dataset.gpu;
-    store.set('gpu', state.gpu);
-    renderChips();
-    load(1);
-  });
-
   $('chips-store').addEventListener('click', (e) => {
     const chip = e.target.closest('[data-store]');
     if (!chip) return;
@@ -123,7 +114,7 @@ export function setupEvents() {
     load(1);
   });
 
-  $('quick-filters').addEventListener('click', (e) => {
+  $('filters').addEventListener('click', (e) => {
     const chip = e.target.closest('[data-filter-brand], [data-filter-series]');
     if (!chip) return;
     if (chip.dataset.filterBrand) toggleBrand(chip.dataset.filterBrand);

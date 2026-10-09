@@ -159,36 +159,6 @@ body {
 .chip.zero { opacity: .5; }
 .chip.zero.on { opacity: 1; }
 
-.quick-filters {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.qf-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.qf-label {
-  flex: none;
-  width: 44px;
-  font-size: 10.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: var(--faint);
-}
-
-.qf-row .chips {
-  flex: 1;
-  min-width: 0;
-  padding-bottom: 2px;
-  margin-bottom: 0;
-}
-
 .filters {
   margin-bottom: 10px;
   border: 1px solid var(--line);

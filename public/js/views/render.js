@@ -42,16 +42,6 @@ export function renderChips() {
   ];
   $('chips-status').innerHTML = statusHtml.join('');
 
-  const gpus = m.gpus;
-  const gpuHtml = ['<button class="chip' + (state.gpu === '' ? ' on' : '') + '" data-gpu="">Todas <span class="n">' + m.total + '</span></button>'];
-  for (const g of gpus) {
-    gpuHtml.push(
-      '<button class="chip' + (state.gpu === g.k ? ' on' : '') + (g.n ? '' : ' zero') + '" data-gpu="' + esc(g.k) + '">' + esc(g.l) +
-        ' <span class="n">' + g.n + '</span></button>'
-    );
-  }
-  $('chips-gpu').innerHTML = gpuHtml.join('');
-
   const stores = m.stores.filter((s) => s.on !== false && s.count > 0);
   const storeHtml = ['<button class="chip' + (state.storeKey === '' ? ' on' : '') + '" data-store="">Todas las tiendas</button>'];
   for (const s of stores) {
@@ -75,7 +65,6 @@ export function renderFiltersCount() {
   let n = 0;
   if (state.deal) n++;
   if (state.used) n++;
-  if (state.gpu) n++;
   if (state.storeKey) n++;
   if (state.minPrice) n++;
   if (state.maxPrice) n++;
@@ -173,7 +162,6 @@ export function query(extra) {
   const p = new URLSearchParams();
   p.set('limit', '60');
   p.set('sort', state.sort);
-  if (state.gpu) p.set('gpu', state.gpu);
   if (state.storeKey) p.set('store', state.storeKey);
   if (state.deal) p.set('deal', '1');
   if (state.used) p.set('used', '1');

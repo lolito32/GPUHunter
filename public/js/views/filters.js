@@ -60,6 +60,26 @@ export function inferBrandSeries(gp) {
   return null;
 }
 
+function seriesBrand(series) {
+  const family = String(series || '').split('-')[0];
+  if (family === 'rtx' || family === 'gtx') return 'nvidia';
+  if (family === 'rx') return 'amd';
+  if (family === 'arc') return 'intel';
+  return null;
+}
+
+function sanitizeSeries() {
+  if (!activeFilters.brands.length) {
+    activeFilters.series = [];
+    return;
+  }
+  activeFilters.series = activeFilters.series.filter((s) => activeFilters.brands.includes(seriesBrand(s)));
+}
+
+sanitizeSeries();
+store.set('filter_brands', activeFilters.brands);
+store.set('filter_series', activeFilters.series);
+
 export function isFilterActive() {
   return activeFilters.brands.length > 0 || activeFilters.series.length > 0;
 }
@@ -82,7 +102,9 @@ export function toggleBrand(brand) {
   const idx = activeFilters.brands.indexOf(brand);
   if (idx >= 0) activeFilters.brands.splice(idx, 1);
   else activeFilters.brands.push(brand);
+  sanitizeSeries();
   store.set('filter_brands', activeFilters.brands);
+  store.set('filter_series', activeFilters.series);
 }
 
 export function toggleSeries(series) {
@@ -104,19 +126,22 @@ function chipHtml(active, attr, value, label, count) {
 }
 
 export function renderFilterChips() {
-  const brandEl = $('qf-brands');
-  const seriesEl = $('qf-series');
+  const brandEl = $('chips-brand');
+  const seriesEl = $('chips-series');
+  const seriesGroup = $('series-group');
   if (!brandEl || !seriesEl) return;
 
   const gpus = (state.meta && state.meta.gpus) || [];
   const brandCounts = {};
   const seriesCounts = {};
+  const seriesBrands = {};
   for (const g of gpus) {
     const info = inferBrandSeries(g.k);
     if (!info) continue;
     const n = g.n || 0;
     brandCounts[info.brand] = (brandCounts[info.brand] || 0) + n;
-    if (info.series) seriesCounts[info.series] = (seriesCounts[info.series] || 0) + n;
+    seriesCounts[info.series] = (seriesCounts[info.series] || 0) + n;
+    seriesBrands[info.series] = info.brand;
   }
 
   const brandOrder = ['nvidia', 'amd', 'intel'];
@@ -125,15 +150,19 @@ export function renderFilterChips() {
     .map((b) => chipHtml(activeFilters.brands.includes(b), 'data-filter-brand', b, BRAND_LABELS[b], brandCounts[b]))
     .join('');
 
-  const known = SERIES_ORDER.filter((s) => seriesCounts[s]);
-  const extras = Object.keys(seriesCounts).filter((s) => !SERIES_ORDER.includes(s));
+  const selected = activeFilters.brands;
+  const showSeries = selected.length > 0;
+  if (seriesGroup) seriesGroup.classList.toggle('hidden', !showSeries);
+  if (!showSeries) {
+    seriesEl.innerHTML = '';
+    return;
+  }
+
+  const belongs = (s) => selected.includes(seriesBrands[s]);
+  const known = SERIES_ORDER.filter((s) => seriesCounts[s] && belongs(s));
+  const extras = Object.keys(seriesCounts).filter((s) => !SERIES_ORDER.includes(s) && belongs(s));
   seriesEl.innerHTML = known
     .concat(extras)
     .map((s) => chipHtml(activeFilters.series.includes(s), 'data-filter-series', s, SERIES_LABELS[s] || s.toUpperCase(), seriesCounts[s]))
     .join('');
-
-  const container = $('quick-filters');
-  if (container) {
-    container.classList.toggle('hidden', !brandEl.innerHTML && !seriesEl.innerHTML);
-  }
 }

@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="app.css?v=1791735001">
+<link rel="stylesheet" href="app.css?v=1791735002">
 </head>
 <body>
 <header class="top">
@@ -58,8 +58,12 @@
           </div>
         </div>
         <div class="filter-group">
-          <span class="filter-label">Modelo</span>
-          <div class="chips" id="chips-gpu" aria-label="Filtrar por GPU"></div>
+          <span class="filter-label">Marca</span>
+          <div class="chips" id="chips-brand" aria-label="Filtrar por marca"></div>
+        </div>
+        <div class="filter-group hidden" id="series-group">
+          <span class="filter-label">Serie</span>
+          <div class="chips" id="chips-series" aria-label="Filtrar por serie"></div>
         </div>
         <div class="filter-group">
           <span class="filter-label">Tienda</span>
@@ -67,17 +71,6 @@
         </div>
       </div>
     </details>
-
-    <div class="quick-filters hidden" id="quick-filters">
-      <div class="qf-row">
-        <span class="qf-label">Marca</span>
-        <div class="chips" id="qf-brands" aria-label="Filtrar por marca"></div>
-      </div>
-      <div class="qf-row">
-        <span class="qf-label">Serie</span>
-        <div class="chips" id="qf-series" aria-label="Filtrar por serie"></div>
-      </div>
-    </div>
 
     <div class="meta-line" id="list-meta"></div>
     <div id="list" class="list"></div>
@@ -169,6 +162,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js?v=1791735001"></script>
+<script type="module" src="app.js?v=1791735002"></script>
 </body>
 </html>

@@ -3,7 +3,6 @@ import { store } from '../utils/store.js';
 
 export const state = {
   meta: null,
-  gpu: store.get('gpu', ''),
   storeKey: store.get('store', ''),
   deal: store.get('deal', false),
   used: store.get('used', false),
