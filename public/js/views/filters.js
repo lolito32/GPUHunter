@@ -225,41 +225,30 @@ function setupFilterPanelAnimation() {
     event.preventDefault();
     if (animating) return;
     animating = true;
+
     if (details.open) {
-      closing = true;
-      panel.style.gridTemplateRows = '0fr';
-      closeTimer = setTimeout(() => {
+      // Closing: panel is rendered, so scrollHeight is available
+      panel.style.gridTemplateRows = panel.scrollHeight + 'px';
+      requestAnimationFrame(() => {
+        panel.style.gridTemplateRows = '0fr';
+      });
+      setTimeout(() => {
         details.open = false;
         panel.style.gridTemplateRows = '';
         animating = false;
-        closing = false;
       }, PANEL_MS);
     } else {
-      closing = false;
-      panel.style.gridTemplateRows = '0fr';
+      // Opening: make sure it's rendered at 0fr first
       details.open = true;
+      panel.style.gridTemplateRows = '0fr';
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           panel.style.gridTemplateRows = '1fr';
           setTimeout(() => {
             animating = false;
-          }, PANEL_MS + 40);
+          }, PANEL_MS + 50);
         });
       });
-    }
-  });
-
-  panel.addEventListener('transitionend', (event) => {
-    if (event.propertyName !== 'grid-template-rows') return;
-    if (closing) {
-      clearTimeout(closeTimer);
-      details.open = false;
-      panel.style.gridTemplateRows = '';
-      animating = false;
-      closing = false;
-    } else if (details.open) {
-      panel.style.gridTemplateRows = '';
-      animating = false;
     }
   });
 }

@@ -170,7 +170,7 @@ export function renderList(append) {
     list.querySelectorAll('.row-item:not(.visible)').forEach((el, idx) => {
       if (idx < 8) {
         requestAnimationFrame(() => {
-          el.style.transitionDelay = (idx * 0.05) + 's';
+          el.style.transitionDelay = (idx * 0.15) + 's';
           el.classList.add('visible');
         });
       } else {
