@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="app.css?v=1791735000">
+<link rel="stylesheet" href="app.css?v=1791735001">
 </head>
 <body>
 <header class="top">
@@ -67,6 +67,17 @@
         </div>
       </div>
     </details>
+
+    <div class="quick-filters hidden" id="quick-filters">
+      <div class="qf-row">
+        <span class="qf-label">Marca</span>
+        <div class="chips" id="qf-brands" aria-label="Filtrar por marca"></div>
+      </div>
+      <div class="qf-row">
+        <span class="qf-label">Serie</span>
+        <div class="chips" id="qf-series" aria-label="Filtrar por serie"></div>
+      </div>
+    </div>
 
     <div class="meta-line" id="list-meta"></div>
     <div id="list" class="list"></div>
@@ -158,6 +169,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js?v=1791735000"></script>
+<script type="module" src="app.js?v=1791735001"></script>
 </body>
 </html>

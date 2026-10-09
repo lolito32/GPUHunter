@@ -10,6 +10,8 @@ import {
   load,
   loadMeta,
   renderChips,
+  renderFiltersCount,
+  renderList,
   renderTargets,
   loadConfig,
   renderDebug,
@@ -18,6 +20,7 @@ import {
   saveConfig,
   syncNow
 } from '../views/render.js';
+import { renderFilterChips, toggleBrand, toggleSeries } from '../views/filters.js';
 
 export function updateSortInfoVisibility() {
   const sortEl = $('sort');
@@ -118,6 +121,16 @@ export function setupEvents() {
     store.set('store', state.storeKey);
     renderChips();
     load(1);
+  });
+
+  $('quick-filters').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-filter-brand], [data-filter-series]');
+    if (!chip) return;
+    if (chip.dataset.filterBrand) toggleBrand(chip.dataset.filterBrand);
+    else if (chip.dataset.filterSeries) toggleSeries(chip.dataset.filterSeries);
+    renderFilterChips();
+    renderFiltersCount();
+    renderList(false);
   });
 
   $('q').addEventListener(

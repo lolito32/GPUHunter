@@ -8,6 +8,7 @@ import { api, apiBase, adminToken, DEFAULT_ADMIN } from '../services/api.js';
 import { sparkline, mountCharts } from '../components/chart.js';
 import { getPush } from '../services/push.js';
 import { isNative } from '../services/update.js';
+import { activeFilterCount, filterItems, renderFilterChips } from './filters.js';
 
 let pollTimer = null;
 
@@ -61,6 +62,8 @@ export function renderChips() {
   }
   $('chips-store').innerHTML = storeHtml.join('');
 
+  renderFilterChips();
+
   if ($('price-min')) $('price-min').value = state.minPrice || '';
   if ($('price-max')) $('price-max').value = state.maxPrice || '';
   renderFiltersCount();
@@ -76,6 +79,7 @@ export function renderFiltersCount() {
   if (state.storeKey) n++;
   if (state.minPrice) n++;
   if (state.maxPrice) n++;
+  n += activeFilterCount();
   el.textContent = String(n);
   el.classList.toggle('on', n > 0);
 }
@@ -146,20 +150,21 @@ export function storeName(key) {
 export function renderList(append) {
   const list = $('list');
   if (!append) list.innerHTML = '';
-  if (state.items.length === 0) {
+  const items = filterItems(state.items);
+  if (items.length === 0) {
     list.innerHTML =
       '<div class="empty">Sin resultados con estos filtros.<br>Probá quitar filtros o sincronizar de nuevo.</div>';
   } else {
     const frag = document.createDocumentFragment();
     const wrapper = document.createElement('div');
-    wrapper.innerHTML = state.items.map(cardHtml).join('');
+    wrapper.innerHTML = items.map(cardHtml).join('');
     while (wrapper.firstChild) frag.appendChild(wrapper.firstChild);
     if (append) list.appendChild(frag);
     else list.replaceChildren(frag);
     mountCharts(list);
   }
   $('list-meta').textContent = state.total
-    ? state.items.length + ' de ' + state.total + ' ofertas' + (state.meta ? ' · ' + (state.offline ? 'Offline (' + timeAgo(state.meta.lastSync) + ')' : 'Actualizado ' + timeAgo(state.meta.lastSync)) : '')
+    ? items.length + ' de ' + state.total + ' ofertas' + (state.meta ? ' · ' + (state.offline ? 'Offline (' + timeAgo(state.meta.lastSync) + ')' : 'Actualizado ' + timeAgo(state.meta.lastSync)) : '')
     : '';
   $('btn-more').classList.toggle('hidden', state.page >= state.pages);
 }
