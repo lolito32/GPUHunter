@@ -1,9 +1,9 @@
-const CACHE = 'gpuhunter-v1791506849';
+const CACHE = 'gpuhunter-v1791510719';
 const SHELL = [
   './',
   'index.html',
-  'app.css?v=1791506849',
-  'app.js?v=1791506849',
+  'app.css?v=1791510719',
+  'app.js?v=1791510719',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png'
