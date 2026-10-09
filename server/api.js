@@ -39,6 +39,10 @@ router.get('/health', (_req, res) => {
   res.json({ ok: true, uptime: Math.round(process.uptime()) });
 });
 
+router.get('/ping', (_req, res) => {
+  res.json({ status: 'ok', timestamp: Date.now() });
+});
+
 router.get('/status', (_req, res) => {
   const status = getStatus();
   res.set('Cache-Control', 'no-store');
@@ -151,9 +155,9 @@ router.get('/products', (req, res) => {
 
 router.get('/app/version', (_req, res) => {
   res.json({
-    latestVersion: '1.1.0',
+    latestVersion: '1.2.0',
     minVersion: '1.0.0',  
-    apkUrl: 'https://github.com/lolito32/GPUHunter/releases/download/v1.1.0/GPUHunter-v1.1.0.apk'
+    apkUrl: 'https://github.com/lolito32/GPUHunter/releases/download/v1.2.0/GPUHunter-v1.2.0.apk'
   });
 });
 
