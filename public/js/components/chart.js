@@ -33,6 +33,7 @@ export function sparkline(history, options = {}) {
     const y = pad + innerH - ((pt.p - min) / (max - min)) * innerH;
     return [Number(x.toFixed(2)), Number(y.toFixed(2))];
   });
+  if (coords.length === 1) coords.push([Number((width - pad).toFixed(2)), coords[0][1]]);
 
   const line = coords.map((c) => c[0] + ',' + c[1]).join(' ');
   const first = coords[0];

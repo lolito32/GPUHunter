@@ -74,9 +74,10 @@ export function cardHtml(item) {
       '" alt="" width="62" height="62" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">'
     : '';
   const hist = state.history && state.history[item.gp];
-  const trend = hist && hist.length > 1
-    ? '<details class="spark"><summary>Historial de precios · ' + hist.length + ' registros</summary>' +
-      sparkline(hist) + '</details>'
+  const trend = hist && hist.length
+    ? '<details class="spark"><summary>Historial de precios · ' +
+      (hist.length === 1 ? '1 registro' : hist.length + ' registros') +
+      '</summary>' + sparkline(hist) + '</details>'
     : '';
   return (
     '<article class="row-item"><div class="row-main">' +
