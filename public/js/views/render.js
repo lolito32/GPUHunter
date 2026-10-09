@@ -1,7 +1,7 @@
 'use strict';
 import { $ } from '../utils/dom.js';
 import { esc, money, timeAgo } from '../utils/format.js';
-import { formatCostPerFps } from '../utils/fps.js';
+import { formatCostPerFps, getVramAwareFps } from '../utils/fps.js';
 import { store } from '../utils/store.js';
 import { state } from '../state/state.js';
 import { api, apiBase, adminToken, DEFAULT_ADMIN } from '../services/api.js';
@@ -95,7 +95,10 @@ export function cardHtml(item) {
   const source = item.sc ? '<span class="via">via ' + esc(item.sc) + '</span>' : '';
   const usedTag = item.us ? '<span class="used-tag">USADA</span>' : '';
   const tag = deal ? '<span class="deal-tag">bajo objetivo</span>' : '';
-  const valueBadge = formatCostPerFps(item.gp, item.pr) ? '<span class="value-badge" title="Costo por FPS ($/FPS)">' + esc(formatCostPerFps(item.gp, item.pr)) + '</span>' : '';
+  const costBadge = formatCostPerFps(item);
+  const valueBadge = costBadge
+    ? '<span class="value-badge" title="$/FPS · ~' + getVramAwareFps(item.gp, item.nm) + ' FPS estimados">' + esc(costBadge) + '</span>'
+    : '';
   const thumb = item.im
     ? '<img class="thumb" src="' +
       esc(item.im) +

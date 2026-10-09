@@ -2,86 +2,104 @@
 import { money } from './format.js';
 
 const FPS_MAP = {
-  'gtx-1050-ti': 35,
-  'gtx-1060': 50,
-  'gtx-1650': 45,
-  'gtx-1650-super': 55,
-  'gtx-1660': 65,
-  'gtx-1660-super': 75,
-  'gtx-1660-ti': 80,
-  'rtx-2060': 85,
-  'rtx-2060-super': 95,
-  'rtx-2070': 105,
-  'rtx-2070-super': 115,
-  'rtx-2080': 120,
-  'rtx-2080-super': 130,
-  'rtx-2080-ti': 145,
-  'rtx-3050': 65,
-  'rtx-3060': 85,
-  'rtx-3060-ti': 115,
-  'rtx-3070': 140,
-  'rtx-3070-ti': 155,
-  'rtx-3080': 180,
-  'rtx-3080-ti': 195,
-  'rtx-3090': 200,
-  'rtx-3090-ti': 210,
-  'rtx-4060': 105,
-  'rtx-4060-ti': 130,
-  'rtx-4070': 175,
-  'rtx-4070-super': 195,
-  'rtx-4070-ti': 210,
-  'rtx-4080': 245,
-  'rtx-4080-super': 255,
-  'rtx-4090': 310,
-  'rtx-5050': 80,
-  'rtx-5060': 120,
-  'rtx-5060-ti': 150,
-  'rtx-5070': 200,
-  'rtx-5070-ti': 230,
-  'rtx-5080': 280,
-  'rtx-5090': 350,
-  'rx-570': 50,
-  'rx-580': 60,
-  'rx-590': 70,
-  'rx-5500-xt': 55,
-  'rx-5600-xt': 80,
-  'rx-5700': 100,
-  'rx-5700-xt': 115,
-  'rx-6400': 35,
-  'rx-6500-xt': 45,
-  'rx-6600': 75,
-  'rx-6600-xt': 95,
-  'rx-6650-xt': 100,
-  'rx-6700': 110,
-  'rx-6700-xt': 125,
-  'rx-6750-xt': 135,
-  'rx-6800': 160,
-  'rx-6800-xt': 180,
-  'rx-6900-xt': 195,
-  'rx-6950-xt': 205,
-  'rx-7600': 105,
-  'rx-7600-xt': 115,
-  'rx-7700-xt': 150,
-  'rx-7800-xt': 185,
-  'rx-7900-xt': 230,
-  'rx-7900-xtx': 260,
-  'arc-a380': 40,
-  'arc-a580': 70,
-  'arc-a750': 95,
-  'arc-a770': 105,
-  'arc-b570': 110,
-  'arc-b580': 130,
-  // VRAM variants
+  // NVIDIA - GTX Series
+  'gtx-1050-ti': 25,
+  'gtx-1060-3gb': 32,
+  'gtx-1060-6gb': 38,
+  'gtx-1650': 40,
+  'gtx-1650-super': 53,
+  'gtx-1660': 58,
+  'gtx-1660-super': 68,
+  'gtx-1660-ti': 70,
+
+  // NVIDIA - RTX 20 Series
+  'rtx-2060-6gb': 78,
+  'rtx-2060-12gb': 80,
+  'rtx-2060-super': 90,
+  'rtx-2070': 94,
+  'rtx-2070-super': 105,
+  'rtx-2080': 110,
+  'rtx-2080-super': 118,
+  'rtx-2080-ti': 138,
+
+  // NVIDIA - RTX 30 Series
+  'rtx-3050-6gb': 50,
+  'rtx-3050-8gb': 63,
+  'rtx-3060-8gb': 75,
   'rtx-3060-12gb': 88,
-  'rtx-3060-8gb': 80,
-  'rtx-4060-8gb': 105,
-  'rtx-4060-ti-8gb': 125,
+  'rtx-3060-ti': 115,
+  'rtx-3070': 130,
+  'rtx-3070-ti': 140,
+  'rtx-3080-10gb': 165,
+  'rtx-3080-12gb': 172,
+  'rtx-3080-ti': 180,
+  'rtx-3090': 190,
+  'rtx-3090-ti': 205,
+
+  // NVIDIA - RTX 40 Series
+  'rtx-4060': 108,
+  'rtx-4060-ti-8gb': 130,
   'rtx-4060-ti-16gb': 132,
-  'rtx-4070-12gb': 175,
-  'rtx-4070-ti-12gb': 210,
-  'rtx-4080-16gb': 245,
-  'rx-6700-xt-12gb': 125,
-  'rx-7800-xt-16gb': 185
+  'rtx-4070': 170,
+  'rtx-4070-super': 195,
+  'rtx-4070-ti': 205,
+  'rtx-4070-ti-super': 225,
+  'rtx-4080': 240,
+  'rtx-4080-super': 250,
+  'rtx-4090': 310,
+
+  // NVIDIA - RTX 50 Series
+  'rtx-5050': 85,
+  'rtx-5060': 125,
+  'rtx-5070': 215,
+  'rtx-5070-ti': 245,
+  'rtx-5080': 295,
+  'rtx-5090': 380,
+
+  // AMD - RX 500 & 5000 Series
+  'rx-570-4gb': 35,
+  'rx-570-8gb': 40,
+  'rx-580-4gb': 40,
+  'rx-580-8gb': 45,
+  'rx-590': 52,
+  'rx-5500-xt-4gb': 48,
+  'rx-5500-xt-8gb': 55,
+  'rx-5600-xt': 78,
+  'rx-5700': 88,
+  'rx-5700-xt': 98,
+
+  // AMD - RX 6000 Series
+  'rx-6400': 38,
+  'rx-6500-xt-4gb': 48,
+  'rx-6500-xt-8gb': 52,
+  'rx-6600': 85,
+  'rx-6600-xt': 100,
+  'rx-6650-xt': 105,
+  'rx-6700': 115,
+  'rx-6700-xt': 130,
+  'rx-6750-xt': 138,
+  'rx-6800': 160,
+  'rx-6800-xt': 185,
+  'rx-6900-xt': 200,
+  'rx-6950-xt': 215,
+
+  // AMD - RX 7000 Series
+  'rx-7600': 106,
+  'rx-7600-xt': 112,
+  'rx-7700-xt': 155,
+  'rx-7800-xt': 180,
+  'rx-7900-gre': 195,
+  'rx-7900-xt': 220,
+  'rx-7900-xtx': 260,
+
+  // INTEL - Arc
+  'arc-a380': 35,
+  'arc-a580': 72,
+  'arc-a750': 85,
+  'arc-a770-8gb': 90,
+  'arc-a770-16gb': 95,
+  'arc-b570': 100, 
+  'arc-b580': 118 
 };
 
 export function parseGpuDetails(productName, baseGpuKey) {
@@ -93,8 +111,25 @@ export function parseGpuDetails(productName, baseGpuKey) {
   return { model, vram };
 }
 
+const DEFAULT_FPS = 70;
+const VRAM_SUFFIX = /^\d+gb$/;
+
+function variantAverageFps(gpuKey) {
+  const prefix = gpuKey + '-';
+  let sum = 0;
+  let count = 0;
+  for (const key of Object.keys(FPS_MAP)) {
+    const rest = key.startsWith(prefix) ? key.slice(prefix.length) : '';
+    if (VRAM_SUFFIX.test(rest)) {
+      sum += FPS_MAP[key];
+      count++;
+    }
+  }
+  return count ? Math.round(sum / count) : 0;
+}
+
 export function getVramAwareFps(gpuKey, productName) {
-  if (!gpuKey) return 70;
+  if (!gpuKey) return DEFAULT_FPS;
   const { vram } = parseGpuDetails(productName, gpuKey);
   if (vram) {
     const specificKey = gpuKey + '-' + vram;
@@ -102,7 +137,10 @@ export function getVramAwareFps(gpuKey, productName) {
       return FPS_MAP[specificKey];
     }
   }
-  return FPS_MAP[gpuKey] || 70;
+  if (FPS_MAP[gpuKey]) return FPS_MAP[gpuKey];
+  const avg = variantAverageFps(gpuKey);
+  if (avg) return avg;
+  return DEFAULT_FPS;
 }
 
 export function calculateCostPerFps(item) {
