@@ -284,6 +284,28 @@ body {
 .delta.down { color: var(--good); }
 .delta.up { color: var(--bad); }
 
+.spark { margin-top: 10px; }
+
+.spark > summary {
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
+.spark > summary::-webkit-details-marker { display: none; }
+.spark > summary::before { content: "▸ "; }
+.spark[open] > summary::before { content: "▾ "; }
+.spark > summary:hover { color: var(--muted); }
+
+.sparkline {
+  display: block;
+  width: 100%;
+  height: 48px;
+  margin-top: 8px;
+}
+
 .go {
   flex: none;
   display: inline-flex;

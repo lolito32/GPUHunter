@@ -3,7 +3,9 @@ import path from 'node:path';
 import { DATA_DIR, DEFAULT_SETTINGS, DEFAULT_TARGETS } from './config.js';
 
 const FILE = path.join(DATA_DIR, 'db.json');
+const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
 const HISTORY_LIMIT = 24;
+const HISTORY_MAX_POINTS = 730;
 const STALE_MS = 7 * 24 * 60 * 60 * 1000;
 
 const emptyData = () => ({
@@ -17,8 +19,10 @@ const emptyData = () => ({
 });
 
 let data = emptyData();
+let history = {};
 let saveTimer = null;
 let freshStart = false;
+let historyDirty = false;
 
 function readDisk() {
   try {
@@ -56,8 +60,29 @@ function writeDisk() {
   fs.renameSync(tmp, FILE);
 }
 
+function readHistory() {
+  try {
+    if (!fs.existsSync(HISTORY_FILE)) {
+      history = {};
+      return;
+    }
+    const parsed = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
+    history = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    history = {};
+  }
+}
+
+function writeHistory() {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  const tmp = HISTORY_FILE + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(history));
+  fs.renameSync(tmp, HISTORY_FILE);
+}
+
 export function init() {
   readDisk();
+  readHistory();
   return data;
 }
 
@@ -80,12 +105,45 @@ export function flush() {
   } catch (err) {
     console.error('[store] error al guardar:', err.message);
   }
+  if (historyDirty) {
+    try {
+      writeHistory();
+      historyDirty = false;
+    } catch (err) {
+      console.error('[store] error al guardar historial:', err.message);
+    }
+  }
 }
 
 export const getTargets = () => data.targets;
 export const getSettings = () => data.settings;
 export const getStatus = () => data.status;
 export const getAllProducts = () => data.products;
+export const getHistory = () => history;
+
+export function recordHistory(list, seenAt = Date.now()) {
+  const day = new Date(seenAt).toISOString().slice(0, 10);
+  const best = new Map();
+  for (const item of list) {
+    if (!item || !item.gpu || !item.price || item.price <= 0) continue;
+    const current = best.get(item.gpu);
+    if (current === undefined || item.price < current) best.set(item.gpu, item.price);
+  }
+  let touched = false;
+  for (const [gpu, price] of best) {
+    const arr = Array.isArray(history[gpu]) ? history[gpu] : [];
+    const last = arr[arr.length - 1];
+    if (last && last.p === price) continue;
+    arr.push({ d: day, p: price });
+    history[gpu] = arr.length > HISTORY_MAX_POINTS ? arr.slice(-HISTORY_MAX_POINTS) : arr;
+    touched = true;
+  }
+  if (touched) {
+    historyDirty = true;
+    scheduleSave();
+  }
+  return touched;
+}
 
 export function setTargets(next) {
   data.targets = { ...DEFAULT_TARGETS, ...next };

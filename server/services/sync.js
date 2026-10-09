@@ -4,6 +4,7 @@ import {
   getStatus,
   getTargets,
   mergeProducts,
+  recordHistory,
   pruneStale,
   pruneAlerts,
   setStatus,
@@ -60,6 +61,7 @@ async function execute(trigger) {
   }
 
   const merged = mergeProducts(products, startedAt);
+  recordHistory(products, startedAt);
   const removed = pruneStale(startedAt);
   pruneAlerts();
 

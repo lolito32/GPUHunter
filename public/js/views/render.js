@@ -3,7 +3,8 @@ import { $ } from '../utils/dom.js';
 import { esc, money, timeAgo } from '../utils/format.js';
 import { store } from '../utils/store.js';
 import { state } from '../state/state.js';
-import { api, apiBase, adminToken, DEFAULT_ADMIN } from '../services/api.js';
+import { api, apiBase, adminToken, fetchHistory, DEFAULT_ADMIN } from '../services/api.js';
+import { sparkline } from '../components/chart.js';
 import { getPush } from '../services/push.js';
 import { isNative } from '../services/update.js';
 
@@ -72,6 +73,11 @@ export function cardHtml(item) {
       esc(item.im) +
       '" alt="" width="62" height="62" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">'
     : '';
+  const hist = state.history && state.history[item.gp];
+  const trend = hist && hist.length > 1
+    ? '<details class="spark"><summary>Historial de precios · ' + hist.length + ' registros</summary>' +
+      sparkline(hist) + '</details>'
+    : '';
   return (
     '<article class="row-item"><div class="row-main">' +
     thumb +
@@ -82,7 +88,9 @@ export function cardHtml(item) {
     '<div class="row-bottom"><div class="price-wrap"><span class="price">' + money(item.pr) +
     '</span>' + delta + '</div>' +
     '<a class="go" href="' + esc(item.ur) + '" target="_blank" rel="noopener noreferrer">Ver</a>' +
-    '</div></div></div></article>'
+    '</div>' +
+    trend +
+    '</div></div></article>'
   );
 }
 
@@ -132,7 +140,11 @@ export async function load(page) {
     $('btn-more').classList.add('hidden');
   }
   try {
-    const data = await api('/products?' + query({ page }), { initial: page === 1 });
+    const [data, hist] = await Promise.all([
+      api('/products?' + query({ page }), { initial: page === 1 }),
+      page === 1 ? fetchHistory().catch(() => null) : null
+    ]);
+    if (hist) state.history = hist;
     state.page = data.page;
     state.pages = data.pages;
     state.total = data.total;

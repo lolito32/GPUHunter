@@ -7,6 +7,7 @@ import {
 } from './config.js';
 import {
   getAllProducts,
+  getHistory,
   getSettings,
   getStatus,
   getTargets,
@@ -156,6 +157,17 @@ router.get('/products', (req, res) => {
     pages: Math.max(1, Math.ceil(total / limit)),
     lastSync: getStatus().lastSync || 0
   });
+});
+
+router.get('/history', (req, res) => {
+  const all = getHistory();
+  res.set('Cache-Control', 'public, max-age=60');
+  const { gpu } = req.query;
+  if (gpu) {
+    res.json({ [gpu]: Array.isArray(all[gpu]) ? all[gpu] : [] });
+    return;
+  }
+  res.json(all);
 });
 
 router.get('/app/version', (_req, res) => {

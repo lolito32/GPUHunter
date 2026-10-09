@@ -10,6 +10,7 @@ export const state = {
   sort: store.get('sort', 'price-asc'),
   q: '',
   items: [],
+  history: {},
   page: 1,
   pages: 1,
   total: 0,
