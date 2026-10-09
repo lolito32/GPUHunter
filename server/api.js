@@ -170,6 +170,7 @@ const FPS_MAP = {
   // NVIDIA - RTX 50 Series
   'rtx-5050': 85,
   'rtx-5060': 125,
+  'rtx-5060-ti': 160,
   'rtx-5070': 215,
   'rtx-5070-ti': 245,
   'rtx-5080': 295,
@@ -207,6 +208,11 @@ const FPS_MAP = {
   'rx-7900-gre': 195,
   'rx-7900-xt': 220,
   'rx-7900-xtx': 260,
+  // AMD - RX 9000 Series
+  'rx-9060': 135,
+  'rx-9060-xt': 155,
+  'rx-9070': 210,
+  'rx-9070-xt': 240,
   // INTEL - Arc
   'arc-a380': 35,
   'arc-a580': 72,
