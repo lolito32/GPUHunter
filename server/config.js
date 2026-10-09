@@ -30,6 +30,7 @@ export const STORES = [
   { key: 'fullhard', name: 'FullH4rd', url: 'https://fullh4rd.com.ar', direct: true },
   { key: 'malditohard', name: 'MalditoHard', url: 'https://www.malditohard.com.ar', direct: true },
   { key: '710tech', name: '710tech', url: 'https://710tech.com.ar', direct: true },
+  { key: 'maximus', name: 'Maximus Gaming Hardware', url: 'https://www.maximus.com.ar', direct: true },
   { key: 'hardgamers', name: 'HardGamers', url: 'https://www.hardgamers.com.ar', direct: false }
 ];
 
