@@ -10,6 +10,8 @@ import {
   load,
   loadMeta,
   renderChips,
+  renderFiltersCount,
+  renderList,
   renderTargets,
   loadConfig,
   renderDebug,
@@ -18,6 +20,15 @@ import {
   saveConfig,
   syncNow
 } from '../views/render.js';
+import { renderFilterChips, toggleBrand, toggleSeries, toggleModel } from '../views/filters.js';
+
+export function updateSortInfoVisibility() {
+  const sortEl = $('sort');
+  const infoEl = $('sort-info');
+  if (!sortEl || !infoEl) return;
+  const isValueSort = sortEl.value === 'value-asc' || sortEl.value === 'value-desc';
+  infoEl.classList.toggle('hidden', !isValueSort);
+}
 
 export function route() {
   const hash = location.hash || '#/';
@@ -83,13 +94,13 @@ async function startOnboarding() {
 }
 
 export function setupEvents() {
-  $('chips-gpu').addEventListener('click', (e) => {
-    const chip = e.target.closest('[data-gpu], [data-deal]');
+  $('chips-status').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-deal], [data-used]');
     if (!chip) return;
     if (chip.dataset.deal) state.deal = !state.deal;
-    else state.gpu = chip.dataset.gpu;
-    store.set('gpu', state.gpu);
+    else if (chip.dataset.used) state.used = !state.used;
     store.set('deal', state.deal);
+    store.set('used', state.used);
     renderChips();
     load(1);
   });
@@ -103,6 +114,17 @@ export function setupEvents() {
     load(1);
   });
 
+  $('filters').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-filter-brand], [data-filter-series], [data-filter-model]');
+    if (!chip) return;
+    if (chip.dataset.filterBrand) toggleBrand(chip.dataset.filterBrand);
+    else if (chip.dataset.filterSeries) toggleSeries(chip.dataset.filterSeries);
+    else if (chip.dataset.filterModel) toggleModel(chip.dataset.filterModel);
+    renderFilterChips();
+    renderFiltersCount();
+    renderList(false);
+  });
+
   $('q').addEventListener(
     'input',
     debounce((e) => {
@@ -111,10 +133,33 @@ export function setupEvents() {
     }, 260)
   );
 
+  const applyPrice = () => {
+    const min = Number($('price-min').value);
+    const max = Number($('price-max').value);
+    state.minPrice = Number.isFinite(min) && min > 0 ? Math.round(min) : 0;
+    state.maxPrice = Number.isFinite(max) && max > 0 ? Math.round(max) : 0;
+    store.set('minPrice', state.minPrice);
+    store.set('maxPrice', state.maxPrice);
+    renderChips();
+    load(1);
+  };
+
+  $('price-apply').addEventListener('click', applyPrice);
+  for (const id of ['price-min', 'price-max']) {
+    $(id).addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        applyPrice();
+      }
+    });
+  }
+
   $('sort').value = state.sort;
+  updateSortInfoVisibility();
   $('sort').addEventListener('change', (e) => {
     state.sort = e.target.value;
     store.set('sort', state.sort);
+    updateSortInfoVisibility();
     load(1);
   });
 

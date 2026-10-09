@@ -4,14 +4,19 @@ import {
   getStatus,
   getTargets,
   mergeProducts,
+  fillMissingImages,
+  recordHistory,
   pruneStale,
+  pruneUnsupportedGpus,
+  pruneHistory,
   pruneAlerts,
   setStatus,
   flush
 } from '../store.js';
-import { detectGpu, looksLikeVideoCard } from '../gpu.js';
+import { detectGpu, looksLikeVideoCard, isSupportedGpu } from '../gpu.js';
 import { processDrops } from './monitor.js';
 import { evaluateRealDeals } from './scraper.js';
+import { maybeBackfill } from './historyBackfill.js';
 
 let current = null;
 
@@ -53,13 +58,18 @@ async function execute(trigger) {
         price: item.price,
         url: item.url,
         image: item.image || '',
-        source: item.source || ''
+        source: item.source || '',
+        used: item.us ? 1 : 0
       });
     }
   }
 
   const merged = mergeProducts(products, startedAt);
-  const removed = pruneStale(startedAt);
+  fillMissingImages();
+  recordHistory(products, startedAt);
+  maybeBackfill();
+  const removed = pruneStale(startedAt) + pruneUnsupportedGpus(isSupportedGpu);
+  pruneHistory();
   pruneAlerts();
 
   const targets = getTargets();

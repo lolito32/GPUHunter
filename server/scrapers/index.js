@@ -2,13 +2,31 @@ import compragamer from './compragamer.js';
 import mexx from './mexx.js';
 import venex from './venex.js';
 import gezatek from './gezatek.js';
-import fullhard from './fullhard.js';
-import malditohard from './malditohard.js';
+// Deshabilitadas: dominios inactivos o inaccesibles (no consumen sync).
+// import fullhard from './fullhard.js'; // Cloudflare JS challenge (403)
+// import malditohard from './malditohard.js'; // dominio dado de baja (NXDOMAIN)
+import tech710 from './710tech.js';
+import maximus from './maximus.js';
+// import pchardware from './pchardware.js'; // precios solo por contacto
+import computienda from './computienda.js';
+import tecnobytes from './tecnobytes.js';
 import hardgamers from './hardgamers.js';
 import { SCRAP_TIMEOUT_MS } from '../config.js';
 import { delay } from '../lib/http.js';
 
-export const SCRAPERS = [compragamer, mexx, venex, gezatek, fullhard, malditohard];
+export const SCRAPERS = [
+  compragamer,
+  mexx,
+  venex,
+  gezatek,
+  // fullhard, // Cloudflare JS challenge (403)
+  // malditohard, // dominio dado de baja (NXDOMAIN)
+  tech710,
+  maximus,
+  // pchardware, // precios solo por contacto
+  computienda,
+  tecnobytes
+];
 
 const withTimeout = (promise, ms, label) =>
   new Promise((resolve, reject) => {

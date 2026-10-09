@@ -1,9 +1,31 @@
 node_modules/
+# Archivos de datos temporales y JSON volátiles
 data/*.json
 data/*.tmp
+# Variables de entorno
 .env
+# Logs y archivos del sistema
 *.log
 .DS_Store
-
+# Archivos de ayuda del asistente
 .aider*
+# Plan de reestructuración (no necesario en repo)
 RESTRUCTURING_PLAN.md
+
+# Android build artefacts
+android/app/build/
+android/build/
+android/.gradle/
+# IDEs y editores
+.idea/
+.vscode/
+*.iml
+# Otros temporales
+*.tmp
+*.bak
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+# Build outputs (si existen)
+dist/
+coverage/

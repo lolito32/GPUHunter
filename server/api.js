@@ -3,10 +3,12 @@ import {
   ADMIN_TOKEN,
   STORES,
   SYNC_INTERVAL_MIN,
-  MAX_PAGES
+  MAX_PAGES,
+  GPU_CATALOG
 } from './config.js';
 import {
   getAllProducts,
+  getHistory,
   getSettings,
   getStatus,
   getTargets,
@@ -20,6 +22,7 @@ import { registerDevice, unregisterDevice, getDevices } from './store.js';
 import { isFcmConfigured, sendPushToDevices, sendPushToToken } from './services/fcm.js';
 
 const router = express.Router();
+const API_HISTORY_POINTS = 120;
 
 router.use((req, res, next) => {
   res.set('Access-Control-Allow-Origin', '*');
@@ -65,6 +68,7 @@ router.get('/meta', (_req, res) => {
   const gpuMap = new Map();
   const storeMap = new Map();
   let underTarget = 0;
+  let usedCount = 0;
 
   for (const product of products) {
     const gpu = gpuMap.get(product.gpu) || { k: product.gpu, l: labelForKey(product.gpu), n: 0 };
@@ -75,15 +79,22 @@ router.get('/meta', (_req, res) => {
     store.n++;
     storeMap.set(product.store, store);
 
+    if (product.used) usedCount++;
     if (targets[product.gpu] && product.price <= targets[product.gpu]) underTarget++;
   }
 
   const status = getStatus();
   const gpus = [...gpuMap.values()];
-  for (const key of Object.keys(targets)) {
+  for (const key of GPU_CATALOG) {
     if (!gpuMap.has(key)) gpus.push({ k: key, l: labelForKey(key), n: 0 });
   }
-  gpus.sort((a, b) => b.n - a.n || a.l.localeCompare(b.l, 'es'));
+  for (const key of Object.keys(targets)) {
+    if (!gpuMap.has(key) && !GPU_CATALOG.includes(key)) gpus.push({ k: key, l: labelForKey(key), n: 0 });
+  }
+  const order = new Map(GPU_CATALOG.map((k, i) => [k, i]));
+  gpus.sort(
+    (a, b) => b.n - a.n || (order.get(a.k) ?? 9999) - (order.get(b.k) ?? 9999) || a.l.localeCompare(b.l, 'es')
+  );
 
   res.set('Cache-Control', 'no-store');
   res.json({
@@ -93,6 +104,7 @@ router.get('/meta', (_req, res) => {
     fresh: isFreshStart() ? 1 : 0,
     total: products.length,
     underTarget,
+    usedCount,
     alertsSent: status.alertsSent || 0,
     intervalMin: settings.intervalMin || SYNC_INTERVAL_MIN,
     gpus,
@@ -112,33 +124,176 @@ router.get('/offers', (req, res) => {
   router.handle(req, res);
 });
 
+const FPS_MAP = {
+  // NVIDIA - GTX Series
+  'gtx-1050-ti': 25,
+  'gtx-1060-3gb': 32,
+  'gtx-1060-6gb': 38,
+  'gtx-1650': 40,
+  'gtx-1650-super': 53,
+  'gtx-1660': 58,
+  'gtx-1660-super': 68,
+  'gtx-1660-ti': 70,
+  // NVIDIA - RTX 20 Series
+  'rtx-2060-6gb': 78,
+  'rtx-2060-12gb': 80,
+  'rtx-2060-super': 90,
+  'rtx-2070': 94,
+  'rtx-2070-super': 105,
+  'rtx-2080': 110,
+  'rtx-2080-super': 118,
+  'rtx-2080-ti': 138,
+  // NVIDIA - RTX 30 Series
+  'rtx-3050-6gb': 50,
+  'rtx-3050-8gb': 63,
+  'rtx-3060-8gb': 75,
+  'rtx-3060-12gb': 88,
+  'rtx-3060-ti': 115,
+  'rtx-3070': 130,
+  'rtx-3070-ti': 140,
+  'rtx-3080-10gb': 165,
+  'rtx-3080-12gb': 172,
+  'rtx-3080-ti': 180,
+  'rtx-3090': 190,
+  'rtx-3090-ti': 205,
+  // NVIDIA - RTX 40 Series
+  'rtx-4060': 108,
+  'rtx-4060-ti-8gb': 130,
+  'rtx-4060-ti-16gb': 132,
+  'rtx-4070': 170,
+  'rtx-4070-super': 195,
+  'rtx-4070-ti': 205,
+  'rtx-4070-ti-super': 225,
+  'rtx-4080': 240,
+  'rtx-4080-super': 250,
+  'rtx-4090': 310,
+  // NVIDIA - RTX 50 Series
+  'rtx-5050': 85,
+  'rtx-5060': 125,
+  'rtx-5060-ti': 160,
+  'rtx-5070': 215,
+  'rtx-5070-ti': 245,
+  'rtx-5080': 295,
+  'rtx-5090': 380,
+  // AMD - RX 500 & 5000 Series
+  'rx-570-4gb': 35,
+  'rx-570-8gb': 40,
+  'rx-580-4gb': 40,
+  'rx-580-8gb': 45,
+  'rx-590': 52,
+  'rx-5500-xt-4gb': 48,
+  'rx-5500-xt-8gb': 55,
+  'rx-5600-xt': 78,
+  'rx-5700': 88,
+  'rx-5700-xt': 98,
+  // AMD - RX 6000 Series
+  'rx-6400': 38,
+  'rx-6500-xt-4gb': 48,
+  'rx-6500-xt-8gb': 52,
+  'rx-6600': 85,
+  'rx-6600-xt': 100,
+  'rx-6650-xt': 105,
+  'rx-6700': 115,
+  'rx-6700-xt': 130,
+  'rx-6750-xt': 138,
+  'rx-6800': 160,
+  'rx-6800-xt': 185,
+  'rx-6900-xt': 200,
+  'rx-6950-xt': 215,
+  // AMD - RX 7000 Series
+  'rx-7600': 106,
+  'rx-7600-xt': 112,
+  'rx-7700-xt': 155,
+  'rx-7800-xt': 180,
+  'rx-7900-gre': 195,
+  'rx-7900-xt': 220,
+  'rx-7900-xtx': 260,
+  // AMD - RX 9000 Series
+  'rx-9060': 135,
+  'rx-9060-xt': 155,
+  'rx-9070': 210,
+  'rx-9070-xt': 240,
+  // INTEL - Arc
+  'arc-a380': 35,
+  'arc-a580': 72,
+  'arc-a750': 85,
+  'arc-a770-8gb': 90,
+  'arc-a770-16gb': 95,
+  'arc-b570': 100,
+  'arc-b580': 118
+};
+
+const DEFAULT_FPS = 70;
+const VRAM_SUFFIX = /^\d+gb$/;
+
+function variantAverageFps(gpuKey) {
+  const prefix = gpuKey + '-';
+  let sum = 0;
+  let count = 0;
+  for (const key of Object.keys(FPS_MAP)) {
+    const rest = key.startsWith(prefix) ? key.slice(prefix.length) : '';
+    if (VRAM_SUFFIX.test(rest)) {
+      sum += FPS_MAP[key];
+      count++;
+    }
+  }
+  return count ? Math.round(sum / count) : 0;
+}
+
+function getVramAwareFps(gpuKey, productName) {
+  if (!gpuKey) return DEFAULT_FPS;
+  const nameLower = String(productName || '').toLowerCase();
+  const vramMatch = nameLower.match(/(\d+)\s*(?:gb|g)\b/);
+  const vram = vramMatch ? vramMatch[1] + 'gb' : null;
+  if (vram) {
+    const specificKey = gpuKey + '-' + vram;
+    if (FPS_MAP[specificKey]) return FPS_MAP[specificKey];
+  }
+  if (FPS_MAP[gpuKey]) return FPS_MAP[gpuKey];
+  const avg = variantAverageFps(gpuKey);
+  if (avg) return avg;
+  return DEFAULT_FPS;
+}
+
 router.get('/products', (req, res) => {
-  const { gpu, store, q, deal } = req.query;
+  const { gpu, store, q, deal, used } = req.query;
   const page = clamp(req.query.page, 1, 1, 10000);
   const limit = clamp(req.query.limit, 60, 1, 500);
-  const sort = ['price-asc', 'price-desc', 'name'].includes(req.query.sort) ? req.query.sort : 'price-asc';
+  const validSorts = ['price-asc', 'price-desc', 'name', 'value-asc', 'value-desc'];
+  const sort = validSorts.includes(req.query.sort) ? req.query.sort : 'price-asc';
   const targets = getTargets();
   const needle = normalize(q);
+  const minPrice = optionalNumber(req.query.min, 0);
+  const maxPrice = optionalNumber(req.query.max, 0);
 
   let list = Object.values(getAllProducts());
   if (gpu) list = list.filter((p) => p.gpu === gpu);
   if (store) list = list.filter((p) => p.store === store);
   if (needle) list = list.filter((p) => normalize(p.name).includes(needle));
   if (deal === '1') list = list.filter((p) => targets[p.gpu] && p.price <= targets[p.gpu]);
+  if (used === '1') list = list.filter((p) => p.used);
+  if (minPrice !== null) list = list.filter((p) => p.price >= minPrice);
+  if (maxPrice !== null) list = list.filter((p) => p.price <= maxPrice);
 
   if (sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name, 'es'));
   else if (sort === 'price-desc') list.sort((a, b) => b.price - a.price);
+  else if (sort === 'value-asc') list.sort((a, b) => (a.price / getVramAwareFps(a.gpu, a.name)) - (b.price / getVramAwareFps(b.gpu, b.name)));
+  else if (sort === 'value-desc') list.sort((a, b) => (b.price / getVramAwareFps(b.gpu, b.name)) - (a.price / getVramAwareFps(b.gpu, b.name)));
   else list.sort((a, b) => a.price - b.price);
 
   const total = list.length;
   const start = (page - 1) * limit;
   const slice = list.slice(start, start + limit);
+  const history = getHistory();
   const items = slice.map((p) => {
-    const item = { st: p.store, nm: p.name, gp: p.gpu, pr: p.price, ur: p.url };
+    const item = { id: p.id, st: p.store, nm: p.name, gp: p.gpu, pr: p.price, ur: p.url };
     if (p.image) item.im = p.image;
     if (p.prevPrice && p.prevPrice !== p.price) item.dl = p.price - p.prevPrice;
     if (p.source) item.sc = p.source;
+    if (p.used) item.us = 1;
     if (targets[p.gpu] && p.price <= targets[p.gpu]) item.tg = 1;
+    const series = history[p.id];
+    if (Array.isArray(series) && series.length) item.hs = series.slice(-API_HISTORY_POINTS);
     return item;
   });
 
@@ -151,6 +306,17 @@ router.get('/products', (req, res) => {
     pages: Math.max(1, Math.ceil(total / limit)),
     lastSync: getStatus().lastSync || 0
   });
+});
+
+router.get('/history', (req, res) => {
+  const all = getHistory();
+  res.set('Cache-Control', 'public, max-age=60');
+  const { gpu } = req.query;
+  if (gpu) {
+    res.json({ [gpu]: Array.isArray(all[gpu]) ? all[gpu] : [] });
+    return;
+  }
+  res.json(all);
 });
 
 router.get('/app/version', (_req, res) => {
@@ -193,7 +359,7 @@ router.put('/settings', adminOnly, (req, res) => {
     }
     patch.stores.hardgamers = patch.stores.hardgamers !== false;
   }
-  if (body.intervalMin !== undefined) patch.intervalMin = clamp(body.intervalMin, SYNC_INTERVAL_MIN, 5, 120);
+  if (body.intervalMin !== undefined) patch.intervalMin = clamp(body.intervalMin, SYNC_INTERVAL_MIN, 5, 1440);
   if (body.maxPages !== undefined) patch.maxPages = clamp(body.maxPages, MAX_PAGES, 1, 8);
   if (body.alertCooldownMin !== undefined) patch.alertCooldownMin = clamp(body.alertCooldownMin, 720, 5, 10080);
   if (typeof body.notifyOnlyOnNewLow === 'boolean') patch.notifyOnlyOnNewLow = body.notifyOnlyOnNewLow;
@@ -340,6 +506,13 @@ function clamp(value, fallback, min, max) {
   const n = Number(value);
   if (!Number.isFinite(n)) return fallback;
   return Math.min(max, Math.max(min, Math.round(n)));
+}
+
+function optionalNumber(value, min = 0) {
+  if (value === undefined || value === null || value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < min) return null;
+  return Math.round(n);
 }
 
 export default router;

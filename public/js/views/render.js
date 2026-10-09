@@ -1,53 +1,93 @@
 'use strict';
 import { $ } from '../utils/dom.js';
 import { esc, money, timeAgo } from '../utils/format.js';
+import { formatCostPerFps, getVramAwareFps } from '../utils/fps.js';
 import { store } from '../utils/store.js';
 import { state } from '../state/state.js';
 import { api, apiBase, adminToken, DEFAULT_ADMIN } from '../services/api.js';
+import { sparkline, mountCharts } from '../components/chart.js';
 import { getPush } from '../services/push.js';
 import { isNative } from '../services/update.js';
+import { activeFilterCount, filterItems, renderFilterChips } from './filters.js';
 
 let pollTimer = null;
 
 export function renderStatus() {
-  const m = state.meta;
+  const m = state.meta || {
+    lastSync: store.get('cached_last_sync', 0),
+    total: store.get('cached_total', state.items.length || 0),
+    underTarget: 0
+  };
   const el = $('status');
-  if (!m) return;
-  el.textContent =
-    'Sync ' + timeAgo(m.lastSync) + ' · ' + m.total + ' ofertas' + (m.underTarget ? ' · ' + m.underTarget + ' bajo objetivo' : '');
-  el.title = m.syncing ? 'Sincronizando…' : 'Última sincronización ' + timeAgo(m.lastSync);
+  if (!el) return;
+  const timeStr = timeAgo(m.lastSync);
+  const totalOffers = m.total !== undefined ? m.total : (state.total || state.items.length);
+  if (state.offline) {
+    el.textContent = 'Offline - Datos guardados (' + timeStr + ') · ' + totalOffers + ' ofertas';
+    el.title = 'Modo offline - Última sincronización ' + timeStr;
+  } else {
+    el.textContent =
+      'Actualizado ' + timeStr + ' · ' + totalOffers + ' ofertas' + (m.underTarget ? ' · ' + m.underTarget + ' bajo objetivo' : '');
+    el.title = m.syncing ? 'Sincronizando…' : 'Última sincronización ' + timeStr;
+  }
 }
 
 export function renderChips() {
   const m = state.meta;
   if (!m) return;
-  const gpus = m.gpus.slice(0, 18);
-  const gpuHtml = ['<button class="chip' + (state.gpu === '' ? ' on' : '') + '" data-gpu="">Todas <span class="n">' + m.total + '</span></button>'];
-  if (state.deal) {
-    gpuHtml.push('<button class="chip on" data-deal="1">Bajo objetivo <span class="n">' + m.underTarget + '</span></button>');
-  } else {
-    gpuHtml.push('<button class="chip" data-deal="1">Bajo objetivo <span class="n">' + m.underTarget + '</span></button>');
-  }
-  for (const g of gpus) {
-    gpuHtml.push(
-      '<button class="chip' + (state.gpu === g.k ? ' on' : '') + '" data-gpu="' + esc(g.k) + '">' + esc(g.l) +
-        ' <span class="n">' + g.n + '</span></button>'
-    );
-  }
-  $('chips-gpu').innerHTML = gpuHtml.join('');
+
+  const statusHtml = [
+    '<button class="chip' + (state.deal ? ' on' : '') + '" data-deal="1">Bajo objetivo <span class="n">' + (m.underTarget || 0) + '</span></button>',
+    '<button class="chip' + (state.used ? ' on' : '') + '" data-used="1">Usadas <span class="n">' + (m.usedCount || 0) + '</span></button>'
+  ];
+  $('chips-status').innerHTML = statusHtml.join('');
 
   const stores = m.stores.filter((s) => s.on !== false && s.count > 0);
-  const html = ['<button class="chip' + (state.storeKey === '' ? ' on' : '') + '" data-store="">Todas las tiendas</button>'];
+  const storeHtml = ['<button class="chip' + (state.storeKey === '' ? ' on' : '') + '" data-store="">Todas las tiendas</button>'];
   for (const s of stores) {
-    html.push(
+    storeHtml.push(
       '<button class="chip' + (state.storeKey === s.k ? ' on' : '') + '" data-store="' + esc(s.k) + '">' +
         esc(s.n) + ' <span class="n">' + s.count + '</span></button>'
     );
   }
-  $('chips-store').innerHTML = html.join('');
+  $('chips-store').innerHTML = storeHtml.join('');
+
+  renderFilterChips();
+
+  if ($('price-min')) $('price-min').value = state.minPrice || '';
+  if ($('price-max')) $('price-max').value = state.maxPrice || '';
+  renderFiltersCount();
 }
 
-export function cardHtml(item) {
+export function renderFiltersCount() {
+  const el = $('filters-count');
+  if (!el) return;
+  let n = 0;
+  if (state.deal) n++;
+  if (state.used) n++;
+  if (state.storeKey) n++;
+  if (state.minPrice) n++;
+  if (state.maxPrice) n++;
+  n += activeFilterCount();
+  el.textContent = String(n);
+  el.classList.toggle('on', n > 0);
+}
+
+let cardObserver = null;
+function getCardObserver() {
+  if (cardObserver) return cardObserver;
+  cardObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.05, rootMargin: '60px' });
+  return cardObserver;
+}
+
+export function cardHtml(item, index = 0) {
   const target = state.meta && state.meta.targets ? state.meta.targets[item.gp] : 0;
   const deal = item.tg === 1 || (target && item.pr <= target);
   let delta = '';
@@ -60,23 +100,48 @@ export function cardHtml(item) {
       '</span>';
   }
   const source = item.sc ? '<span class="via">via ' + esc(item.sc) + '</span>' : '';
+  const usedTag = item.us ? '<span class="used-tag">USADA</span>' : '';
   const tag = deal ? '<span class="deal-tag">bajo objetivo</span>' : '';
+  const costBadge = formatCostPerFps(item);
+  const valueBadge = costBadge
+    ? '<span class="value-badge" title="$/FPS · ~' + getVramAwareFps(item.gp, item.nm) + ' FPS estimados">' + esc(costBadge) + '</span>'
+    : '';
   const thumb = item.im
     ? '<img class="thumb" src="' +
       esc(item.im) +
       '" alt="" width="62" height="62" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">'
     : '';
+  const hist = state.history && state.history[item.id];
+  let trend = '';
+  if (hist && hist.length) {
+    const body =
+      hist.length > 1
+        ? sparkline(hist, { key: item.id })
+        : '<p class="spark-empty">Todavía no hay precios anteriores para esta oferta. GPUHunter acaba de empezar a registrar su historial; el gráfico se irá completando con las próximas variaciones de precio.</p>';
+    const count = hist.length === 1 ? '1 registro' : hist.length + ' registros';
+    trend =
+      '<details class="spark">' +
+      '<summary class="spark-btn">' +
+      '<svg class="spark-ico" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 16l4-5 3 3 5-7 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' +
+      '<span class="spark-btn-text">Ver historial de precios</span>' +
+      '<span class="spark-count">' + esc(count) + '</span>' +
+      '</summary>' +
+      '<div class="spark-body">' + body + '</div>' +
+      '</details>';
+  }
   return (
-    '<article class="row-item"><div class="row-main">' +
+    '<article class="row-item" style="--i: ' + index + '"><div class="row-main">' +
     thumb +
     '<div class="row-col">' +
     '<div class="row-top"><span class="store-pill">' + esc(storeName(item.st)) + '</span>' +
-    source + tag + '</div>' +
+    usedTag + source + tag + valueBadge + '</div>' +
     '<h3 class="name">' + esc(item.nm) + '</h3>' +
     '<div class="row-bottom"><div class="price-wrap"><span class="price">' + money(item.pr) +
     '</span>' + delta + '</div>' +
     '<a class="go" href="' + esc(item.ur) + '" target="_blank" rel="noopener noreferrer">Ver</a>' +
-    '</div></div></div></article>'
+    '</div>' +
+    trend +
+    '</div></div></article>'
   );
 }
 
@@ -88,19 +153,33 @@ export function storeName(key) {
 export function renderList(append) {
   const list = $('list');
   if (!append) list.innerHTML = '';
-  if (state.items.length === 0) {
+  const items = filterItems(state.items);
+  if (items.length === 0) {
     list.innerHTML =
       '<div class="empty">Sin resultados con estos filtros.<br>Probá quitar filtros o sincronizar de nuevo.</div>';
   } else {
     const frag = document.createDocumentFragment();
     const wrapper = document.createElement('div');
-    wrapper.innerHTML = state.items.map(cardHtml).join('');
+    wrapper.innerHTML = items.map((item, index) => cardHtml(item, index)).join('');
     while (wrapper.firstChild) frag.appendChild(wrapper.firstChild);
     if (append) list.appendChild(frag);
     else list.replaceChildren(frag);
+    mountCharts(list);
+
+    const observer = getCardObserver();
+    list.querySelectorAll('.row-item:not(.visible)').forEach((el, idx) => {
+      if (idx < 8) {
+        requestAnimationFrame(() => {
+          el.style.transitionDelay = (idx * 0.15) + 's';
+          el.classList.add('visible');
+        });
+      } else {
+        observer.observe(el);
+      }
+    });
   }
   $('list-meta').textContent = state.total
-    ? state.items.length + ' de ' + state.total + ' ofertas' + (state.meta ? ' · datos ' + timeAgo(state.meta.lastSync) : '')
+    ? items.length + ' de ' + state.total + ' ofertas' + (state.meta ? ' · ' + (state.offline ? 'Offline (' + timeAgo(state.meta.lastSync) + ')' : 'Actualizado ' + timeAgo(state.meta.lastSync)) : '')
     : '';
   $('btn-more').classList.toggle('hidden', state.page >= state.pages);
 }
@@ -109,10 +188,12 @@ export function query(extra) {
   const p = new URLSearchParams();
   p.set('limit', '60');
   p.set('sort', state.sort);
-  if (state.gpu) p.set('gpu', state.gpu);
   if (state.storeKey) p.set('store', state.storeKey);
   if (state.deal) p.set('deal', '1');
+  if (state.used) p.set('used', '1');
   if (state.q) p.set('q', state.q);
+  if (state.minPrice) p.set('min', String(state.minPrice));
+  if (state.maxPrice) p.set('max', String(state.maxPrice));
   if (extra && extra.page) p.set('page', String(extra.page));
   return p.toString();
 }
@@ -126,13 +207,42 @@ export async function load(page) {
   }
   try {
     const data = await api('/products?' + query({ page }), { initial: page === 1 });
+    for (const item of data.items) {
+      if (item.hs) state.history[item.id] = item.hs;
+    }
     state.page = data.page;
     state.pages = data.pages;
     state.total = data.total;
     state.items = page === 1 ? data.items : state.items.concat(data.items);
+    if (page === 1) {
+      store.set('cached_items', data.items);
+      store.set('cached_total', data.total);
+      store.set('cached_pages', data.pages);
+      if (data.total !== undefined) store.set('cached_total', data.total);
+    }
+    state.offline = false;
     renderList(page !== 1);
   } catch (err) {
-    $('list').innerHTML = '<div class="empty">No se pudo cargar: ' + esc(err.message) + '</div>';
+    const cachedItems = store.get('cached_items', null);
+    if (page === 1 && cachedItems && cachedItems.length > 0) {
+      state.items = cachedItems;
+      state.total = store.get('cached_total', cachedItems.length);
+      state.pages = store.get('cached_pages', 1);
+      state.page = 1;
+      state.offline = true;
+      if (!state.meta) {
+        state.meta = {
+          lastSync: store.get('cached_last_sync', 0),
+          total: state.total,
+          gpus: [],
+          stores: []
+        };
+      }
+      renderList(false);
+      renderStatus();
+    } else {
+      $('list').innerHTML = '<div class="empty">No se pudo cargar: ' + esc(err.message) + '<br>Modo offline sin datos cacheados.</div>';
+    }
   } finally {
     state.loading = false;
   }
@@ -142,12 +252,31 @@ export async function loadMeta() {
   try {
     state.meta = await api('/meta');
     state.metaAt = Date.now();
+    state.offline = false;
     if (!state.meta.fresh) store.set('targets', state.meta.targets || {});
     else maybeRestoreTargets(state.meta);
+    store.set('cached_meta', state.meta);
+    if (state.meta.lastSync) store.set('cached_last_sync', state.meta.lastSync);
+    if (state.meta.total !== undefined) store.set('cached_total', state.meta.total);
     renderStatus();
     renderChips();
   } catch (err) {
-    $('status').textContent = 'Sin conexión con el servidor';
+    const cachedMeta = store.get('cached_meta', null);
+    if (cachedMeta) {
+      state.meta = cachedMeta;
+      state.offline = true;
+      renderStatus();
+      renderChips();
+    } else {
+      state.offline = true;
+      state.meta = {
+        lastSync: store.get('cached_last_sync', 0),
+        total: store.get('cached_total', 0),
+        gpus: [],
+        stores: []
+      };
+      renderStatus();
+    }
   }
 }
 
