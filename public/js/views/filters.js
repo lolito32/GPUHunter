@@ -207,3 +207,62 @@ export function renderFilterChips() {
     .map((g) => chipHtml(activeFilters.models.includes(g.k), 'data-filter-model', g.k, g.l, g.n || 0))
     .join('');
 }
+
+const PANEL_MS = 300;
+
+function setupFilterPanelAnimation() {
+  const details = document.getElementById('filters');
+  if (!details) return;
+  const summary = details.querySelector('.filters-btn');
+  const panel = details.querySelector('.filters-panel');
+  if (!summary || !panel) return;
+
+  let animating = false;
+  let closing = false;
+  let closeTimer = null;
+
+  summary.addEventListener('click', (event) => {
+    event.preventDefault();
+    if (animating) return;
+    animating = true;
+    if (details.open) {
+      closing = true;
+      panel.style.gridTemplateRows = '0fr';
+      closeTimer = setTimeout(() => {
+        details.open = false;
+        panel.style.gridTemplateRows = '';
+        animating = false;
+        closing = false;
+      }, PANEL_MS);
+    } else {
+      closing = false;
+      panel.style.gridTemplateRows = '0fr';
+      details.open = true;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          panel.style.gridTemplateRows = '1fr';
+          setTimeout(() => {
+            animating = false;
+          }, PANEL_MS + 40);
+        });
+      });
+    }
+  });
+
+  panel.addEventListener('transitionend', (event) => {
+    if (event.propertyName !== 'grid-template-rows') return;
+    if (closing) {
+      clearTimeout(closeTimer);
+      details.open = false;
+      panel.style.gridTemplateRows = '';
+      animating = false;
+      closing = false;
+    } else if (details.open) {
+      panel.style.gridTemplateRows = '';
+      animating = false;
+    }
+  });
+}
+
+setupFilterPanelAnimation();
+
