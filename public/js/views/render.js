@@ -1,7 +1,7 @@
 'use strict';
 import { $ } from '../utils/dom.js';
 import { esc, money, timeAgo } from '../utils/format.js';
-import { formatCostPerFps } from '../utils/metrics.js';
+import { formatCostPerFps } from '../utils/fps.js';
 import { store } from '../utils/store.js';
 import { state } from '../state/state.js';
 import { api, apiBase, adminToken, DEFAULT_ADMIN } from '../services/api.js';

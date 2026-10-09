@@ -142,10 +142,22 @@ const FPS_MAP = {
   'rx-6900-xt': 195, 'rx-6950-xt': 205, 'rx-7600': 105, 'rx-7600-xt': 115,
   'rx-7700-xt': 150, 'rx-7800-xt': 185, 'rx-7900-xt': 230, 'rx-7900-xtx': 260,
   'arc-a380': 40, 'arc-a580': 70, 'arc-a750': 95, 'arc-a770': 105,
-  'arc-b570': 110, 'arc-b580': 130
+  'arc-b570': 110, 'arc-b580': 130,
+  'rtx-3060-12gb': 88, 'rtx-3060-8gb': 80, 'rtx-4060-8gb': 105,
+  'rtx-4060-ti-8gb': 125, 'rtx-4060-ti-16gb': 132, 'rtx-4070-12gb': 175,
+  'rtx-4070-ti-12gb': 210, 'rtx-4080-16gb': 245, 'rx-6700-xt-12gb': 125,
+  'rx-7800-xt-16gb': 185
 };
-function getGpuFps(gpuKey) {
+
+function getVramAwareFps(gpuKey, productName) {
   if (!gpuKey) return 70;
+  const nameLower = String(productName || '').toLowerCase();
+  const vramMatch = nameLower.match(/(\d+)\s*(?:gb|g)\b/);
+  const vram = vramMatch ? vramMatch[1] + 'gb' : null;
+  if (vram) {
+    const specificKey = gpuKey + '-' + vram;
+    if (FPS_MAP[specificKey]) return FPS_MAP[specificKey];
+  }
   return FPS_MAP[gpuKey] || 70;
 }
 
@@ -171,8 +183,8 @@ router.get('/products', (req, res) => {
 
   if (sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name, 'es'));
   else if (sort === 'price-desc') list.sort((a, b) => b.price - a.price);
-  else if (sort === 'value-asc') list.sort((a, b) => (a.price / getGpuFps(a.gpu)) - (b.price / getGpuFps(b.gpu)));
-  else if (sort === 'value-desc') list.sort((a, b) => (b.price / getGpuFps(b.gpu)) - (a.price / getGpuFps(a.gpu)));
+  else if (sort === 'value-asc') list.sort((a, b) => (a.price / getVramAwareFps(a.gpu, a.name)) - (b.price / getVramAwareFps(b.gpu, b.name)));
+  else if (sort === 'value-desc') list.sort((a, b) => (b.price / getVramAwareFps(b.gpu, b.name)) - (a.price / getVramAwareFps(b.gpu, b.name)));
   else list.sort((a, b) => a.price - b.price);
 
   const total = list.length;
