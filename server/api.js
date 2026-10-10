@@ -57,7 +57,7 @@ router.get('/status', (_req, res) => {
     intervalMin: getSettings().intervalMin || SYNC_INTERVAL_MIN,
     lastRun: status.lastRun || null,
     fresh: isFreshStart() ? 1 : 0,
-    version: '1.3.0'
+    version: '1.3.1'
   });
 });
 
@@ -322,7 +322,7 @@ router.get('/history', (req, res) => {
 router.get('/app/version', (_req, res) => {
   res.json({
     latestVersion: '1.3.1',
-    minVersion: '1.0.0',  
+    minVersion: '1.0.0',
     apkUrl: 'https://github.com/lolito32/GPUHunter/releases/download/v1.3.1/GPUHunter-v1.3.1.apk'
   });
 });
